@@ -67,8 +67,15 @@ export default defineConfig({
     // adds that origin to script-src itself, but not to connect-src, and this
     // config sets an explicit connect-src -- so without this the reload socket
     // is blocked and hot reload silently stops working.
-    const devConnectSrc =
-      command === "serve" ? " http://localhost:* ws://localhost:*" : "";
+    const isDev = command === "serve";
+    const devConnectSrc = isDev ? " http://localhost:* ws://localhost:*" : "";
+
+    // Vite serves CSS in dev by injecting <style> elements from JavaScript
+    // rather than emitting a stylesheet, so dev needs 'unsafe-inline'. The
+    // font is served from the dev server too. Production emits a real .css
+    // file and keeps style-src locked to 'self'.
+    const devStyleSrc = isDev ? " 'unsafe-inline' http://localhost:*" : "";
+    const devFontSrc = isDev ? " http://localhost:*" : "";
 
     return {
       name: "__MSG_extName__",
@@ -88,9 +95,9 @@ export default defineConfig({
           "default-src 'self'",
           "script-src 'self'",
           "object-src 'self'",
-          "style-src 'self'",
+          `style-src 'self'${devStyleSrc}`,
           "img-src 'self' data:",
-          "font-src 'self'",
+          `font-src 'self'${devFontSrc}`,
           `media-src 'self' ${audioOrigin}`,
           `connect-src 'self' ${apiOrigin} ${audioOrigin}${devConnectSrc}`,
           `form-action 'none'`,

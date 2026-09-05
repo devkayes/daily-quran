@@ -3,7 +3,7 @@ import { env } from "@/lib/env";
 import { t } from "@/lib/i18n";
 import { sendMessage } from "@/lib/messaging";
 import { nowPlayingItem, playbackPositionItem } from "@/lib/storage";
-import { hasAudio, type Surah } from "@/lib/surahs";
+import { FIRST_PLAYABLE_SURAH, hasAudio, type Surah } from "@/lib/surahs";
 import { AudioControls } from "./components/AudioControls";
 import { AyahCard } from "./components/AyahCard";
 import { SurahList } from "./components/SurahList";
@@ -14,32 +14,42 @@ export function App() {
   const playback = usePlaybackState();
   const [volume, setVolume] = useVolume();
 
-  async function play(surah?: Surah) {
-    const target = surah ?? (await nowPlayingItem.getValue());
-
-    if (target && "audioPath" in target && hasAudio(target)) {
-      // A surah picked from the list: always start it from the beginning.
-      await playbackPositionItem.setValue(0);
+  async function play(surah?: Surah): Promise<void> {
+    // A surah picked from the list always starts from the beginning.
+    if (surah) {
+      if (!hasAudio(surah)) return;
       await sendMessage("play", {
-        url: audioUrlFor(target),
-        surahNumber: target.number,
-        name: target.name,
+        url: audioUrlFor(surah),
+        surahNumber: surah.number,
+        name: surah.name,
         volume,
         startAt: 0,
       });
       return;
     }
 
-    if (target && "url" in target) {
-      // Resuming whatever was loaded last.
+    // The play button resumes whatever was loaded last.
+    const resuming = await nowPlayingItem.getValue();
+    if (resuming) {
       await sendMessage("play", {
-        url: target.url,
-        surahNumber: target.surahNumber,
-        name: target.name,
+        url: resuming.url,
+        surahNumber: resuming.surahNumber,
+        name: resuming.name,
         volume,
         startAt: await playbackPositionItem.getValue(),
       });
+      return;
     }
+
+    // Nothing has ever played. v1 fell back to the first surah with a
+    // recitation here; without this the play button silently did nothing.
+    await sendMessage("play", {
+      url: audioUrlFor(FIRST_PLAYABLE_SURAH),
+      surahNumber: FIRST_PLAYABLE_SURAH.number,
+      name: FIRST_PLAYABLE_SURAH.name,
+      volume,
+      startAt: 0,
+    });
   }
 
   return (
@@ -54,7 +64,7 @@ export function App() {
       <AudioControls
         playback={playback}
         volume={volume}
-        onPlay={() => void play()}
+        onPlay={() => void play().catch(() => {})}
         onPause={() => void sendMessage("pause", undefined).catch(() => {})}
         onRestart={() => void sendMessage("restart", undefined).catch(() => {})}
         onSeek={(seconds) => void sendMessage("seek", seconds).catch(() => {})}

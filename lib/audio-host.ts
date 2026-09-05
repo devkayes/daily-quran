@@ -1,12 +1,4 @@
 import type { PlaybackState, PlayCommand } from "@/lib/messaging";
-import {
-  audioDurationItem,
-  nowPlayingItem,
-  playbackPositionItem,
-  volumeItem,
-} from "@/lib/storage";
-
-const POSITION_PERSIST_INTERVAL_MS = 1000;
 
 /**
  * `HTMLMediaElement.HAVE_METADATA`, inlined. Reading it off the global would
@@ -23,28 +15,28 @@ function clamp01(value: number): number {
 
 /**
  * Owns the single `<audio>` element and is the only source of truth for
- * playback. Runs inside whichever context can hold a DOM audio element: an
- * offscreen document on Chrome, the background event page on Firefox.
+ * playback. Runs wherever a DOM audio element can live: an offscreen document
+ * on Chrome, the background event page on Firefox.
  *
- * It reports state two ways — a broadcast for a popup that is open right now,
- * and `chrome.storage` for a popup that opens later — so a freshly opened popup
- * paints the correct state without waiting for a round trip.
+ * It deliberately touches no extension API beyond the DOM. Chrome offscreen
+ * documents have access to only a subset of extension APIs — `chrome.storage`
+ * is not among them — so persisting from here threw and aborted playback
+ * before `audio.play()` was ever reached. State is reported through `onState`
+ * and the owner decides what to persist.
  */
 export class AudioHost {
   readonly #audio: HTMLAudioElement;
-  readonly #broadcast: (state: PlaybackState) => void;
+  readonly #onState: (state: PlaybackState) => void;
 
   #surahNumber: number | null = null;
   #status: PlaybackState["status"] = "idle";
   #errorMessage: string | undefined;
   #pendingSeek: number | null = null;
-  #lastPersistedAt = 0;
 
-  constructor(audio: HTMLAudioElement, broadcast: (state: PlaybackState) => void) {
+  constructor(audio: HTMLAudioElement, onState: (state: PlaybackState) => void) {
     this.#audio = audio;
-    this.#broadcast = broadcast;
+    this.#onState = onState;
     this.#attachListeners();
-    void this.#restoreVolume();
   }
 
   get state(): PlaybackState {
@@ -70,11 +62,6 @@ export class AudioHost {
       audio.src = command.url;
       this.#pendingSeek = Math.max(0, command.startAt);
       audio.load();
-      await nowPlayingItem.setValue({
-        surahNumber: command.surahNumber,
-        name: command.name,
-        url: command.url,
-      });
     }
 
     this.#setMediaMetadata(command.name);
@@ -92,33 +79,28 @@ export class AudioHost {
 
   pause(): void {
     this.#audio.pause();
-    void this.#persistPosition(true);
   }
 
   /** Rewind to the start and play from there. */
   async restart(): Promise<void> {
     this.#seekTo(0);
-    await this.#persistPosition(true);
     if (this.#audio.src) {
       try {
         await this.#audio.play();
       } catch {
         // A restart on a source the browser refuses to start is not fatal;
-        // the state broadcast below still reflects position 0.
+        // the state below still reflects position 0.
       }
     }
     this.#emit();
   }
 
   setVolume(volume: number): void {
-    const next = clamp01(volume);
-    this.#audio.volume = next;
-    void volumeItem.setValue(next);
+    this.#audio.volume = clamp01(volume);
   }
 
   seek(seconds: number): void {
     this.#seekTo(seconds);
-    void this.#persistPosition(true);
     this.#emit();
   }
 
@@ -129,9 +111,6 @@ export class AudioHost {
 
     audio.addEventListener("loadedmetadata", () => {
       this.#applyPendingSeek();
-      void audioDurationItem.setValue(
-        Number.isFinite(audio.duration) ? audio.duration : 0,
-      );
       this.#emit();
     });
 
@@ -149,14 +128,12 @@ export class AudioHost {
 
     audio.addEventListener("timeupdate", () => {
       if (this.#status !== "playing") return;
-      void this.#persistPosition(false);
       this.#emit();
     });
 
     audio.addEventListener("ended", () => {
       this.#status = "ended";
       this.#seekTo(0);
-      void this.#persistPosition(true);
       this.#emit();
     });
 
@@ -165,10 +142,6 @@ export class AudioHost {
       this.#errorMessage = "This recitation could not be loaded.";
       this.#emit();
     });
-  }
-
-  async #restoreVolume(): Promise<void> {
-    this.#audio.volume = clamp01(await volumeItem.getValue());
   }
 
   #applyPendingSeek(): void {
@@ -189,16 +162,6 @@ export class AudioHost {
     } catch {
       this.#pendingSeek = target;
     }
-  }
-
-  async #persistPosition(force: boolean): Promise<void> {
-    const now = Date.now();
-    if (!force && now - this.#lastPersistedAt < POSITION_PERSIST_INTERVAL_MS) return;
-    this.#lastPersistedAt = now;
-    const position = Number.isFinite(this.#audio.currentTime)
-      ? this.#audio.currentTime
-      : 0;
-    await playbackPositionItem.setValue(position);
   }
 
   #setMediaMetadata(name: string): void {
@@ -226,6 +189,6 @@ export class AudioHost {
   }
 
   #emit(): void {
-    this.#broadcast(this.state);
+    this.#onState(this.state);
   }
 }

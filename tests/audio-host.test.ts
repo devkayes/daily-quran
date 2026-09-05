@@ -1,13 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fakeBrowser } from "wxt/testing/fake-browser";
+import { describe, expect, it } from "vitest";
 import { AudioHost } from "@/lib/audio-host";
 import type { PlaybackState, PlayCommand } from "@/lib/messaging";
-import {
-  audioDurationItem,
-  nowPlayingItem,
-  playbackPositionItem,
-  volumeItem,
-} from "@/lib/storage";
 import { FakeAudio } from "./fake-audio";
 
 const COMMAND: PlayCommand = {
@@ -25,10 +18,6 @@ function setup() {
   return { audio, host, states, latest: () => states.at(-1) };
 }
 
-beforeEach(() => {
-  fakeBrowser.reset();
-});
-
 describe("AudioHost.play", () => {
   it("points the element at the requested recitation and starts it", async () => {
     const { audio, host } = setup();
@@ -39,15 +28,14 @@ describe("AudioHost.play", () => {
     expect(audio.playCalls).toBe(1);
   });
 
-  it("records what is now playing so a later popup can resume it", async () => {
-    const { host } = setup();
+  // Chrome offscreen documents cannot reach chrome.storage. A storage call here
+  // used to throw before `audio.play()` was reached, so nothing ever played.
+  it("touches no extension API, only the audio element", async () => {
+    const { audio, host, latest } = setup();
     await host.play(COMMAND);
 
-    expect(await nowPlayingItem.getValue()).toEqual({
-      surahNumber: 1,
-      name: "সূরা আল ফাতিহা",
-      url: COMMAND.url,
-    });
+    expect(audio.playCalls).toBe(1);
+    expect(latest()?.surahNumber).toBe(1);
   });
 
   it("does not reload the element when the same surah is resumed", async () => {
@@ -84,12 +72,12 @@ describe("AudioHost.play", () => {
     expect(latest()?.message).toBe("blocked");
   });
 
-  it("publishes the duration once metadata arrives", async () => {
-    const { audio, host } = setup();
+  it("reports the duration once metadata arrives", async () => {
+    const { audio, host, latest } = setup();
     await host.play(COMMAND);
     audio.loadMetadata(213.5);
 
-    expect(await audioDurationItem.getValue()).toBe(213.5);
+    expect(latest()?.duration).toBe(213.5);
   });
 });
 
@@ -107,10 +95,10 @@ describe("AudioHost.setVolume", () => {
     expect(audio.volume).toBe(0);
   });
 
-  it("persists the level so the next popup opens at it", async () => {
-    const { host } = setup();
+  it("applies the level to the element", () => {
+    const { audio, host } = setup();
     host.setVolume(0.3);
-    expect(await volumeItem.getValue()).toBe(0.3);
+    expect(audio.volume).toBe(0.3);
   });
 });
 
@@ -127,13 +115,13 @@ describe("AudioHost.seek", () => {
     expect(audio.currentTime).toBe(0);
   });
 
-  it("persists the new position immediately", async () => {
-    const { audio, host } = setup();
+  it("reports the new position immediately", async () => {
+    const { audio, host, latest } = setup();
     await host.play(COMMAND);
     audio.loadMetadata(100);
 
     host.seek(55);
-    expect(await playbackPositionItem.getValue()).toBe(55);
+    expect(latest()?.position).toBe(55);
   });
 });
 
@@ -150,7 +138,6 @@ describe("AudioHost.restart", () => {
 
     expect(audio.currentTime).toBe(0);
     expect(audio.playCalls).toBe(2);
-    expect(await playbackPositionItem.getValue()).toBe(0);
     expect(latest()?.position).toBe(0);
   });
 });
@@ -175,7 +162,6 @@ describe("AudioHost state broadcasts", () => {
 
     expect(latest()?.status).toBe("ended");
     expect(latest()?.position).toBe(0);
-    expect(await playbackPositionItem.getValue()).toBe(0);
   });
 
   it("reports an error when the source fails to load", async () => {
@@ -193,23 +179,17 @@ describe("AudioHost state broadcasts", () => {
     expect(states.every((s) => Number.isFinite(s.duration))).toBe(true);
   });
 
-  it("throttles position writes but broadcasts every tick", async () => {
-    vi.useFakeTimers();
-    try {
-      const { audio, host, states } = setup();
-      await host.play(COMMAND);
-      audio.loadMetadata(100);
+  it("emits on every playback tick", async () => {
+    const { audio, host, states } = setup();
+    await host.play(COMMAND);
+    audio.loadMetadata(100);
 
-      const before = states.length;
-      audio.advanceTo(1);
-      audio.advanceTo(2);
-      audio.advanceTo(3);
+    const before = states.length;
+    audio.advanceTo(1);
+    audio.advanceTo(2);
+    audio.advanceTo(3);
 
-      expect(states.length - before).toBe(3);
-      // Only the first tick inside the throttle window reaches storage.
-      expect(await playbackPositionItem.getValue()).toBe(1);
-    } finally {
-      vi.useRealTimers();
-    }
+    expect(states.length - before).toBe(3);
+    expect(states.at(-1)?.position).toBe(3);
   });
 });

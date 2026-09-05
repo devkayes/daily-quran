@@ -1,7 +1,6 @@
 import { browser } from "#imports";
 import { AudioHost } from "@/lib/audio-host";
 import {
-  broadcastQuietly,
   IDLE_PLAYBACK_STATE,
   type PlaybackState,
   type PlayCommand,
@@ -80,7 +79,9 @@ function createOffscreenController(): AudioController {
  * Firefox: MV3 background scripts run in an event page, which has a DOM, so the
  * audio element lives here directly and no offscreen document is involved.
  */
-function createInPageController(): AudioController {
+function createInPageController(
+  onState: (state: PlaybackState) => void,
+): AudioController {
   let host: AudioHost | null = null;
 
   function ensureHost(): AudioHost {
@@ -88,7 +89,7 @@ function createInPageController(): AudioController {
     const audio = document.createElement("audio");
     audio.preload = "metadata";
     document.body.append(audio);
-    host = new AudioHost(audio, broadcastQuietly);
+    host = new AudioHost(audio, onState);
     return host;
   }
 
@@ -102,8 +103,15 @@ function createInPageController(): AudioController {
   };
 }
 
-export function createAudioController(): AudioController {
+/**
+ * `onState` is only wired up on Firefox, where the host runs in this same
+ * context. On Chrome the offscreen document reports state over the
+ * `hostStateChanged` message instead, which the background handles.
+ */
+export function createAudioController(
+  onState: (state: PlaybackState) => void,
+): AudioController {
   return import.meta.env.FIREFOX
-    ? createInPageController()
+    ? createInPageController(onState)
     : createOffscreenController();
 }

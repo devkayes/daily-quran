@@ -1,3 +1,4 @@
+import type { Page } from "@playwright/test";
 import { expect, label, test } from "./fixtures";
 
 const AYAH_FIXTURE = {
@@ -15,6 +16,26 @@ const AYAH_FIXTURE = {
 };
 
 const AYAH_ROUTE = "**/api/v1/filter/daily-ayat*";
+
+/**
+ * Reads one key from the extension's storage from inside the page. `chrome` is
+ * not declared in the Node-side test types, so the probe is typed at the point
+ * of use rather than with a global declaration.
+ */
+async function readStorage(page: Page, key: string): Promise<unknown> {
+  return page.evaluate(async (k) => {
+    const api = (
+      globalThis as unknown as {
+        chrome: {
+          storage: {
+            local: { get(keys: string): Promise<Record<string, unknown>> };
+          };
+        };
+      }
+    ).chrome;
+    return (await api.storage.local.get(k))[k];
+  }, key);
+}
 
 test.describe("popup", () => {
   test("renders the ayah, the controls and all 114 surahs", async ({
@@ -143,5 +164,86 @@ test.describe("popup", () => {
       page.getByText(AYAH_FIXTURE.data.surahName, { exact: true }),
     ).toBeVisible();
     await expect(page.getByText(AYAH_FIXTURE.data.ayatMean)).toBeVisible();
+  });
+  // The popup once rendered completely unstyled because the CSP blocked the
+  // stylesheet: every icon filled the popup width. Assert the stylesheet is
+  // actually in force, not merely that elements exist.
+  test("the stylesheet loads and applies", async ({ context, extensionId }) => {
+    const page = await context.newPage();
+    await context.route(AYAH_ROUTE, (route) => route.fulfill({ json: AYAH_FIXTURE }));
+    await page.goto(`chrome-extension://${extensionId}/popup.html`);
+
+    const icon = page.locator("img").first();
+    await expect(icon).toBeVisible();
+
+    const iconBox = await icon.boundingBox();
+    expect(iconBox?.width).toBeLessThan(30);
+    expect(iconBox?.height).toBeLessThan(30);
+
+    // body max-width from the stylesheet; unstyled it would grow past this.
+    expect(await page.evaluate(() => document.body.clientWidth)).toBeLessThanOrEqual(
+      500,
+    );
+  });
+  /**
+   * The regression that mattered most: selecting a surah highlighted the button
+   * but never produced sound, because the audio host tried to write to
+   * chrome.storage -- unavailable in a Chrome offscreen document -- and threw
+   * before `audio.play()` was reached. Asserting the highlight was not enough;
+   * this asserts playback actually runs.
+   *
+   * Hits the real recitation bucket, so it also catches the audio host URL
+   * breaking.
+   */
+  test("playing a surah actually starts audio and advances", async ({
+    context,
+    extensionId,
+  }) => {
+    const page = await context.newPage();
+    await context.route(AYAH_ROUTE, (route) => route.fulfill({ json: AYAH_FIXTURE }));
+    await page.goto(`chrome-extension://${extensionId}/popup.html`);
+
+    await page
+      .getByRole("button", { name: /সূরা আল ফাতিহা/ })
+      .first()
+      .click();
+
+    // Play swapping to Pause is the popup's proof the host reached "playing".
+    await expect(page.getByRole("button", { name: label("pause") })).toBeVisible({
+      timeout: 20_000,
+    });
+
+    // The background must have persisted what is playing -- the write the
+    // offscreen document could not do itself.
+    await expect
+      .poll(
+        async () =>
+          (await readStorage(page, "nowPlaying")) as { surahNumber?: number } | null,
+        { timeout: 15_000 },
+      )
+      .toMatchObject({ surahNumber: 1 });
+
+    // And the position must actually move.
+    await expect
+      .poll(async () => Number(await readStorage(page, "playbackPosition")) || 0, {
+        timeout: 20_000,
+      })
+      .toBeGreaterThan(0);
+  });
+
+  test("the play button falls back to the first surah with a recitation", async ({
+    context,
+    extensionId,
+  }) => {
+    const page = await context.newPage();
+    await context.route(AYAH_ROUTE, (route) => route.fulfill({ json: AYAH_FIXTURE }));
+    await page.goto(`chrome-extension://${extensionId}/popup.html`);
+
+    // Nothing selected yet: pressing play used to do nothing at all.
+    await page.getByRole("button", { name: label("play") }).click();
+
+    await expect(page.getByRole("button", { name: label("pause") })).toBeVisible({
+      timeout: 20_000,
+    });
   });
 });

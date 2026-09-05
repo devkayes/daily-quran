@@ -57,7 +57,12 @@ interface ProtocolMap {
   hostSeek(seconds: number): void;
   hostGetState(): PlaybackState;
 
-  // ---- audio host -> popup ----
+  // ---- audio host -> background ----
+  // Chrome offscreen documents cannot reach chrome.storage, so the host reports
+  // state here and the background is the one that persists it.
+  hostStateChanged(state: PlaybackState): void;
+
+  // ---- background -> popup ----
   playbackStateChanged(state: PlaybackState): void;
 }
 
