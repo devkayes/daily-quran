@@ -1,15 +1,23 @@
 {
   "name": "Daily Quran",
   "description": "Access and reflect on Quranic verses anytime, directly from your browser.",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "author": "its-kayes",
   "manifest_version": 3,
   "action": {
     "default_popup": "main.html",
-    "default_icon": "/assets/daily-quran.png"
+    "default_icon": {
+      "16": "/assets/icon-16.png",
+      "32": "/assets/icon-32.png",
+      "48": "/assets/icon-48.png",
+      "128": "/assets/icon-128.png"
+    }
   },
   "icons": {
-    "128": "/assets/daily-quran.png"
+    "16": "/assets/icon-16.png",
+    "32": "/assets/icon-32.png",
+    "48": "/assets/icon-48.png",
+    "128": "/assets/icon-128.png"
   },
   "background": {
     "service_worker": "/worker/worker.js"
@@ -18,7 +26,10 @@
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://daily-quran-dev.s3.ap-south-1.amazonaws.com https://pro.proggamoyquran.com/api/v1/filter/daily-ayat https://proggamoyquran.com https://www.kayes.dev/* https://app.proggamoyquran.com"
   },
-  "permissions": ["offscreen", "storage"],
+  "permissions": [
+    "offscreen",
+    "storage"
+  ],
   "homepage_url": "https://www.kayes.dev/talks/daily-quran",
   "commands": {
     "_execute_action": {}

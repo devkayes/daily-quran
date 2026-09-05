@@ -24,7 +24,7 @@
       property="og:description"
       content="Access and reflect on Quranic verses anytime, directly from your browser. Enhance your spiritual journey daily."
     />
-    <meta property="og:image" content="./assets/daily-quran.png" />
+    <meta property="og:image" content="./assets/icon-128.png" />
     <meta property="og:url" content="https://www.kayes.dev/talks/daily-quran" />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
@@ -36,8 +36,8 @@
       name="twitter:description"
       content="Access and reflect on Quranic verses anytime, directly from your browser."
     />
-    <meta name="twitter:image" content="./assets/daily-quran.png" />
-    <link rel="icon" type="image/png" href="./assets/daily-quran.png" />
+    <meta name="twitter:image" content="./assets/icon-128.png" />
+    <link rel="icon" type="image/png" href="./assets/icon-128.png" />
     <meta name="language" content="en" />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://www.kayes.dev/talks/daily-quran" />
@@ -54,7 +54,7 @@
         "operatingSystem": "Web",
         "browserRequirements": "Chrome, Edge, Firefox",
         "url": "https://www.kayes.dev/talks/daily-quran",
-        "image": "./assets/daily-quran.png",
+        "image": "./assets/icon-128.png",
         "author": {
           "@type": "Person",
           "name": "Emrul Kayes"
@@ -88,16 +88,16 @@
       <p id="readMore" surahNumber="1">আরও পড়ুন...</p>
 
       <div id="audioBox">
-        <button id="playButton">
-          <img id="playImg" src="./assets/play-icon.svg" alt="Play" />
+        <button id="playButton" type="button" aria-label="চালান">
+          <img id="playImg" src="./assets/play-icon.svg" alt="" />
         </button>
 
-        <button id="pauseButton" style="display: none">
-          <img id="pauseImg" src="./assets/pause-icon.svg" alt="Pause" />
+        <button id="pauseButton" type="button" aria-label="বিরতি" style="display: none">
+          <img id="pauseImg" src="./assets/pause-icon.svg" alt="" />
         </button>
 
         <div id="timelineBox">
-          <input type="range" id="audioTimeline" name="audioTimeline" />
+          <input type="range" id="audioTimeline" name="audioTimeline" aria-label="অডিও অগ্রগতি" />
           <div id="timelineDetails">
             <span id="currentTime">০০</span>
             /
@@ -106,18 +106,19 @@
         </div>
 
         <div id="volumeBox">
-          <img id="speakerImg" src="./assets/speaker.svg" alt="Pause" />
+          <img id="speakerImg" src="./assets/speaker.svg" alt="" />
           <input
             type="range"
             id="volumeTimeline"
             name="volumeTimeline"
+            aria-label="শব্দের মাত্রা"
             min="0"
             max="10"
           />
         </div>
 
-        <button id="restartButton">
-          <img id="restartImg" src="./assets/restart-icon.svg" alt="Pause" />
+        <button id="restartButton" type="button" aria-label="শুরু থেকে">
+          <img id="restartImg" src="./assets/restart-icon.svg" alt="" />
         </button>
       </div>
 

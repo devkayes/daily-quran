@@ -36,6 +36,13 @@ restartButton.addEventListener("click", () => {
   chrome.runtime.sendMessage({ type: "restart" });
 });
 
+audioTimeline.addEventListener("input", () => {
+  chrome.runtime.sendMessage({
+    type: "timelineDrag",
+    value: +audioTimeline.value,
+  });
+});
+
 volumeTimeline.addEventListener("input", () => {
   const volume = volumeTimeline.value;
   const realVolume = +volume / 10;
@@ -78,17 +85,6 @@ chrome.runtime.onMessage.addListener(async (msg) => {
     case "currentTime":
       playButton.style.display = "none";
       pauseButton.style.display = "block";
-
-      audioTimeline.addEventListener("input", () => {
-        const clientInputTime = +audioTimeline.value;
-
-        if (clientInputTime !== +msg.value) {
-          chrome.runtime.sendMessage({
-            type: "timelineDrag",
-            value: clientInputTime,
-          });
-        }
-      });
 
       audioTimeline.value = msg.value;
 
@@ -139,14 +135,16 @@ function ayatFetch() {
   fetch(PAIQ_API.RANDOM_AYAT)
     .then((data) => data.json())
     .then((ayatData) => {
-      arabicAyat.innerHTML = ayatData.data.fullAyat;
-      ayatMean.innerHTML = ayatData.data.ayatMean;
-      surahName.innerHTML = ayatData.data.surahName;
-      ayatNumber.innerHTML = `আয়াত ${convertToBanglaNumber(
-        ayatData.data.ayatNumber
-      )}`;
-      readMore.setAttribute("surahNumber", ayatData.data.ayatNumber);
-    });
+      const ayat = ayatData && ayatData.data;
+      if (!ayat) return;
+
+      arabicAyat.textContent = ayat.fullAyat;
+      ayatMean.textContent = ayat.ayatMean;
+      surahName.textContent = ayat.surahName;
+      ayatNumber.textContent = `আয়াত ${convertToBanglaNumber(ayat.ayatNumber)}`;
+      readMore.setAttribute("surahNumber", ayat.surahNumber);
+    })
+    .catch(() => {});
 }
 
 function getAudioInfo() {

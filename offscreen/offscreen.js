@@ -85,6 +85,12 @@ function restartAudio() {
   });
 
   audio.pause();
+  audio.currentTime = 0;
+
+  chrome.runtime.sendMessage({
+    type: "paused",
+    value: 0,
+  });
 }
 
 function volumeChanged(value) {

@@ -1,3 +1,11 @@
+const POPUP_COMMANDS = new Set([
+  "play",
+  "pause",
+  "restart",
+  "volume",
+  "timelineDrag",
+]);
+
 async function ensureOffscreen() {
   const isHasDocument = await chrome.offscreen.hasDocument();
   if (!isHasDocument) {
@@ -10,8 +18,18 @@ async function ensureOffscreen() {
   }
 }
 
-chrome.runtime.onMessage.addListener(async (msg) => {
+chrome.runtime.onMessage.addListener((msg) => {
+  // Messages already addressed to the offscreen document, and the status
+  // broadcasts coming back from it, are not ours to relay. Filtering here keeps
+  // the worker from waking on every `timeupdate` tick during playback.
+  if (!msg || msg.offscreen || !POPUP_COMMANDS.has(msg.type)) return;
+
+  relay(msg);
+});
+
+async function relay(msg) {
   await ensureOffscreen();
+
   switch (msg.type) {
     case "play":
       await chrome.runtime.sendMessage({
@@ -41,4 +59,4 @@ chrome.runtime.onMessage.addListener(async (msg) => {
       });
       break;
   }
-});
+}
