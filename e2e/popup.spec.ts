@@ -367,7 +367,19 @@ test.describe("popup", () => {
       Math.max(0, (await duration()) - 2),
     );
 
+    // The background must queue An-Nas on its own...
     await expect.poll(nowPlayingNumber, { timeout: 60_000 }).toBe(114);
+
+    // ...and actually play it. Asserting only that `nowPlaying` moved would
+    // pass even if the next surah were queued but silent.
+    await expect(page.getByRole("button", { name: label("pause") })).toBeVisible({
+      timeout: 30_000,
+    });
+    await expect
+      .poll(async () => Number(await readStorage(page, "playbackPosition")) || 0, {
+        timeout: 30_000,
+      })
+      .toBeGreaterThan(0.5);
   });
 
   test("with continuous off, playback stops at the end", async ({
