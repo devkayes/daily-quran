@@ -79,17 +79,16 @@ test.describe("popup", () => {
     );
   });
 
-  test("surahs without a recitation are disabled", async ({ context, extensionId }) => {
+  // Audio moved to the Islamic Network CDN, which carries all 114 surahs, so
+  // the "coming soon" disabled state is gone entirely.
+  test("every surah is selectable", async ({ context, extensionId }) => {
     const page = await context.newPage();
     await context.route(AYAH_ROUTE, (route) => route.fulfill({ json: AYAH_FIXTURE }));
     await page.goto(`chrome-extension://${extensionId}/popup.html`);
 
     const surahList = page.getByRole("toolbar", { name: label("surahListLabel") });
-    const disabled = surahList.getByRole("button", { disabled: true });
-
-    await expect(disabled.first()).toHaveAttribute("title", label("comingSoon"));
-    // 114 surahs, 33 with audio.
-    await expect(disabled).toHaveCount(81);
+    await expect(surahList.getByRole("button")).toHaveCount(114);
+    await expect(surahList.getByRole("button", { disabled: true })).toHaveCount(0);
   });
 
   test("shows an error state and recovers on retry", async ({
@@ -185,6 +184,44 @@ test.describe("popup", () => {
       500,
     );
   });
+
+  /**
+   * The transport icons once rendered as empty circles: they were 15x15 with
+   * 6px padding, which under Tailwind's `border-box` preflight left a 13x3
+   * content area. The bounding box was still 15x15, so measuring that alone
+   * missed it -- this measures the area the glyph is actually painted into.
+   */
+  test("control icons are drawn at a visible size", async ({
+    context,
+    extensionId,
+  }) => {
+    const page = await context.newPage();
+    await context.route(AYAH_ROUTE, (route) => route.fulfill({ json: AYAH_FIXTURE }));
+    await page.goto(`chrome-extension://${extensionId}/popup.html`);
+
+    const contentBoxes = await page.evaluate(() =>
+      [...document.querySelectorAll<HTMLImageElement>('img[src^="/icon/"]')].map(
+        (img) => {
+          const cs = getComputedStyle(img);
+          const pad = (v: string) => Number.parseFloat(v) || 0;
+          return {
+            src: img.getAttribute("src") ?? "",
+            loaded: img.complete && img.naturalWidth > 0,
+            width: img.clientWidth - pad(cs.paddingLeft) - pad(cs.paddingRight),
+            height: img.clientHeight - pad(cs.paddingTop) - pad(cs.paddingBottom),
+          };
+        },
+      ),
+    );
+
+    expect(contentBoxes.length).toBeGreaterThanOrEqual(3);
+    for (const box of contentBoxes) {
+      expect(box, `${box.src} must be loaded`).toMatchObject({ loaded: true });
+      expect(box.width, `${box.src} width`).toBeGreaterThanOrEqual(12);
+      expect(box.height, `${box.src} height`).toBeGreaterThanOrEqual(12);
+    }
+  });
+
   /**
    * The regression that mattered most: selecting a surah highlighted the button
    * but never produced sound, because the audio host tried to write to
@@ -245,5 +282,28 @@ test.describe("popup", () => {
     await expect(page.getByRole("button", { name: label("pause") })).toBeVisible({
       timeout: 20_000,
     });
+  });
+  test("shows a loading indicator while a recitation is fetched", async ({
+    context,
+    extensionId,
+  }) => {
+    const page = await context.newPage();
+    await context.route(AYAH_ROUTE, (route) => route.fulfill({ json: AYAH_FIXTURE }));
+    await page.goto(`chrome-extension://${extensionId}/popup.html`);
+
+    await page
+      .getByRole("button", { name: /সূরা আল ফাতিহা/ })
+      .first()
+      .click();
+
+    // The spinner is announced to assistive tech, so find it by its role.
+    const spinner = page.getByRole("status", { name: label("loadingAudio") });
+    await expect(spinner.first()).toBeVisible({ timeout: 10_000 });
+
+    // ...and it must go away once playback actually starts.
+    await expect(page.getByRole("button", { name: label("pause") })).toBeVisible({
+      timeout: 20_000,
+    });
+    await expect(spinner).toHaveCount(0);
   });
 });

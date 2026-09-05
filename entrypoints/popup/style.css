@@ -72,8 +72,33 @@ body {
   cursor: pointer;
 }
 
+/* Loading indicator for a recitation that is still being fetched. */
+.dq-spinner {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  vertical-align: -0.15em;
+  animation: dq-spin 0.7s linear infinite;
+}
+
+@keyframes dq-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .dq-range {
     transition: none;
+  }
+
+  /* Still legible as "busy" without spinning. */
+  .dq-spinner {
+    animation: none;
+    border-right-color: currentColor;
+    opacity: 0.45;
   }
 }

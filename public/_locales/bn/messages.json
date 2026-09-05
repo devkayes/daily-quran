@@ -1,21 +1,53 @@
 {
-  "extName": { "message": "Daily Quran" },
+  "extName": {
+    "message": "Daily Quran"
+  },
   "extDescription": {
     "message": "যেকোনো সময় ব্রাউজার থেকেই কুরআনের আয়াত পড়ুন ও অনুধাবন করুন।"
   },
-  "ayatLabel": { "message": "আয়াত" },
-  "readMore": { "message": "আরও পড়ুন..." },
-  "reloadAyah": { "message": "নতুন আয়াত লোড করুন" },
-  "play": { "message": "চালান" },
-  "pause": { "message": "বিরতি" },
-  "restart": { "message": "শুরু থেকে" },
-  "volume": { "message": "শব্দের মাত্রা" },
-  "progress": { "message": "অডিও অগ্রগতি" },
-  "comingSoon": { "message": "শীঘ্রই আসছে — আপনার মতামতের অপেক্ষায়।" },
-  "ayahLoadError": { "message": "আয়াত আনা যায়নি। আবার চেষ্টা করুন।" },
-  "audioLoadError": { "message": "এই তিলাওয়াতটি লোড করা যায়নি।" },
-  "retry": { "message": "আবার চেষ্টা করুন" },
-  "loadingAyah": { "message": "আয়াত আসছে..." },
-  "surahListLabel": { "message": "সূরার তালিকা" },
-  "footerLink": { "message": "Daily Quran" }
+  "ayatLabel": {
+    "message": "আয়াত"
+  },
+  "readMore": {
+    "message": "আরও পড়ুন..."
+  },
+  "reloadAyah": {
+    "message": "নতুন আয়াত লোড করুন"
+  },
+  "play": {
+    "message": "চালান"
+  },
+  "pause": {
+    "message": "বিরতি"
+  },
+  "restart": {
+    "message": "শুরু থেকে"
+  },
+  "volume": {
+    "message": "শব্দের মাত্রা"
+  },
+  "progress": {
+    "message": "অডিও অগ্রগতি"
+  },
+  "ayahLoadError": {
+    "message": "আয়াত আনা যায়নি। আবার চেষ্টা করুন।"
+  },
+  "audioLoadError": {
+    "message": "এই তিলাওয়াতটি লোড করা যায়নি।"
+  },
+  "retry": {
+    "message": "আবার চেষ্টা করুন"
+  },
+  "loadingAyah": {
+    "message": "আয়াত আসছে..."
+  },
+  "loadingAudio": {
+    "message": "তিলাওয়াত লোড হচ্ছে..."
+  },
+  "surahListLabel": {
+    "message": "সূরার তালিকা"
+  },
+  "footerLink": {
+    "message": "Daily Quran"
+  }
 }

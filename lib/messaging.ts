@@ -23,7 +23,8 @@ export interface PlayCommand {
 }
 
 export interface PlaybackState {
-  status: "playing" | "paused" | "ended" | "idle" | "error";
+  /** "loading" covers both the initial fetch and mid-playback buffering. */
+  status: "loading" | "playing" | "paused" | "ended" | "idle" | "error";
   /** Seconds. */
   position: number;
   /** Seconds; 0 until metadata loads. */

@@ -1,10 +1,14 @@
 import { env } from "@/lib/env";
-import type { SurahWithAudio } from "@/lib/surahs";
+import type { Surah } from "@/lib/surahs";
 
-/** Absolute URL of a surah's recitation. */
-export function audioUrlFor(surah: SurahWithAudio): string {
-  const path = surah.audioPath.startsWith("/")
-    ? surah.audioPath
-    : `/${surah.audioPath}`;
-  return `${env.audioBaseUrl}${path}`;
+/**
+ * Recitation URL for a surah, built from the Islamic Network CDN's pattern:
+ * `{base}/{bitrate}/{reciter}/{1-114}.mp3`.
+ *
+ * Every surah is available, so there is no longer a per-surah audio path to
+ * store — the number is the whole address. The CDN serves range requests, so
+ * seeking works on the long surahs.
+ */
+export function audioUrlFor(surah: Surah): string {
+  return `${env.audioBaseUrl}/${env.audioBitrate}/${env.audioReciter}/${surah.number}.mp3`;
 }

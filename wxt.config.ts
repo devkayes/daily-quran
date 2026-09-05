@@ -59,7 +59,7 @@ export default defineConfig({
     const apiOrigin = originOf(env.WXT_API_BASE_URL, "https://pro.proggamoyquran.com");
     const audioOrigin = originOf(
       env.WXT_AUDIO_BASE_URL,
-      "https://daily-quran-dev.s3.ap-south-1.amazonaws.com",
+      "https://cdn.islamic.network/quran/audio-surah",
     );
     const isFirefox = browser === "firefox";
 
@@ -88,7 +88,10 @@ export default defineConfig({
       // the background directly and never needs the offscreen permission.
       permissions: isFirefox ? ["storage"] : ["storage", "offscreen"],
 
-      host_permissions: [`${apiOrigin}/*`, `${audioOrigin}/*`],
+      // Only the ayah API is fetched. Recitations load through an <audio>
+      // element, which media-src covers -- asking for host access to the CDN
+      // would add an install warning for nothing.
+      host_permissions: [`${apiOrigin}/*`],
 
       content_security_policy: {
         extension_pages: [

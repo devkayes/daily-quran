@@ -193,3 +193,57 @@ describe("AudioHost state broadcasts", () => {
     expect(states.at(-1)?.position).toBe(3);
   });
 });
+
+describe("AudioHost loading state", () => {
+  it("reports loading before the recitation has started", async () => {
+    const { audio, host, states } = setup();
+    audio.playRejection = null;
+
+    const pending = host.play(COMMAND);
+    // Emitted before play() resolves, so the popup can show a spinner while a
+    // 100 MB surah downloads.
+    expect(states.some((s) => s.status === "loading")).toBe(true);
+    await pending;
+  });
+
+  it("clears loading once playback actually begins", async () => {
+    const { host, latest } = setup();
+    await host.play(COMMAND);
+    expect(latest()?.status).toBe("playing");
+  });
+
+  // load() fires a `pause` event. Treating that as a user pause would flash the
+  // play button in the middle of fetching.
+  it("does not let the load() pause event cancel the loading state", async () => {
+    const { audio, host, states } = setup();
+    audio.playRejection = new Error("still buffering");
+
+    await host.play(COMMAND);
+
+    const afterLoad = states.map((s) => s.status);
+    expect(afterLoad).not.toContain("paused");
+  });
+
+  it("returns to loading when the stream stalls mid-playback", async () => {
+    const { audio, host, latest } = setup();
+    await host.play(COMMAND);
+    expect(latest()?.status).toBe("playing");
+
+    audio.stall();
+    expect(latest()?.status).toBe("loading");
+  });
+
+  it("ignores a stall that arrives when nothing is playing", () => {
+    const { audio, host, latest } = setup();
+    audio.stall();
+    expect(latest()).toBeUndefined();
+    expect(host.state.status).toBe("idle");
+  });
+
+  it("an explicit pause still wins over loading", async () => {
+    const { host, latest } = setup();
+    await host.play(COMMAND);
+    host.pause();
+    expect(latest()?.status).toBe("paused");
+  });
+});

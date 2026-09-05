@@ -34,6 +34,13 @@ export class FakeAudio extends EventTarget {
   load(): void {
     this.loadCalls += 1;
     this.currentSrc = this.src;
+    // Real elements fire `pause` when load() interrupts an existing stream.
+    this.dispatchEvent(new Event("pause"));
+  }
+
+  /** Simulates the network stalling after playback has begun. */
+  stall(): void {
+    this.dispatchEvent(new Event("waiting"));
   }
 
   /** Simulates the browser finishing metadata load for `seconds` of audio. */

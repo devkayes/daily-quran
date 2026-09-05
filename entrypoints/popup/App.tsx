@@ -3,7 +3,7 @@ import { env } from "@/lib/env";
 import { t } from "@/lib/i18n";
 import { sendMessage } from "@/lib/messaging";
 import { nowPlayingItem, playbackPositionItem } from "@/lib/storage";
-import { FIRST_PLAYABLE_SURAH, hasAudio, type Surah } from "@/lib/surahs";
+import { FIRST_SURAH, type Surah } from "@/lib/surahs";
 import { AudioControls } from "./components/AudioControls";
 import { AyahCard } from "./components/AyahCard";
 import { SurahList } from "./components/SurahList";
@@ -17,7 +17,6 @@ export function App() {
   async function play(surah?: Surah): Promise<void> {
     // A surah picked from the list always starts from the beginning.
     if (surah) {
-      if (!hasAudio(surah)) return;
       await sendMessage("play", {
         url: audioUrlFor(surah),
         surahNumber: surah.number,
@@ -28,11 +27,13 @@ export function App() {
       return;
     }
 
-    // The play button resumes whatever was loaded last.
+    // The play button resumes whatever was loaded last. The URL is rebuilt
+    // from the surah number rather than replayed from storage, so changing
+    // reciter, bitrate or CDN cannot strand anyone on a dead address.
     const resuming = await nowPlayingItem.getValue();
     if (resuming) {
       await sendMessage("play", {
-        url: resuming.url,
+        url: audioUrlFor({ number: resuming.surahNumber, name: resuming.name }),
         surahNumber: resuming.surahNumber,
         name: resuming.name,
         volume,
@@ -41,12 +42,12 @@ export function App() {
       return;
     }
 
-    // Nothing has ever played. v1 fell back to the first surah with a
-    // recitation here; without this the play button silently did nothing.
+    // Nothing has ever played. v1 fell back to the first surah here; without
+    // this the play button silently did nothing.
     await sendMessage("play", {
-      url: audioUrlFor(FIRST_PLAYABLE_SURAH),
-      surahNumber: FIRST_PLAYABLE_SURAH.number,
-      name: FIRST_PLAYABLE_SURAH.name,
+      url: audioUrlFor(FIRST_SURAH),
+      surahNumber: FIRST_SURAH.number,
+      name: FIRST_SURAH.name,
       volume,
       startAt: 0,
     });
@@ -79,6 +80,7 @@ export function App() {
 
       <SurahList
         activeSurahNumber={playback.surahNumber}
+        isLoading={playback.status === "loading"}
         onSelect={(surah) => void play(surah)}
       />
 

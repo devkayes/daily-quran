@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+### Added
+- Recitations for **all 114 surahs**. Audio moved to the Islamic Network CDN
+  (`cdn.islamic.network/quran/audio-surah/{bitrate}/{reciter}/{number}.mp3`),
+  replacing the private S3 bucket that carried 33. The disabled "coming soon"
+  buttons are gone.
+- Reciter and bitrate are configurable via `WXT_AUDIO_RECITER` and
+  `WXT_AUDIO_BITRATE`. Defaults are `ar.alafasy` at 128 kbps.
+- A loading indicator while a recitation is being fetched, shown both beside
+  the surah name and in place of the play control. It also reappears if the
+  stream stalls mid-playback. Matters more now that the longest surahs are
+  large files.
+
+### Changed
+- A surah's recitation is addressed by its number, so no per-surah audio path
+  is stored and the "surah without audio" case no longer exists in the types.
+- Resuming rebuilds the audio URL from the surah number rather than replaying a
+  stored URL, so changing reciter, bitrate or CDN cannot strand a saved
+  position on a dead address.
+- Dropped the audio host from `host_permissions`. Recitations load through an
+  `<audio>` element, which `media-src` covers, so the install prompt no longer
+  asks for access to the audio host.
+
 ## [2.0.0] - 2026-09-05
 
 A technical release. No new features: the extension does what 1.1.3 did, on a

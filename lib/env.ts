@@ -22,11 +22,15 @@ const dailyAyatPath = required(
 export const env = {
   /** Endpoint returning one ayah with its Bengali translation. */
   dailyAyatUrl: new URL(dailyAyatPath, apiBaseUrl).toString(),
-  /** Bucket root the per-surah mp3 paths hang off. */
+  /** Root of the surah recitation CDN. */
   audioBaseUrl: required(
     import.meta.env.WXT_AUDIO_BASE_URL,
     "WXT_AUDIO_BASE_URL",
   ).replace(/\/$/, ""),
+  /** Surah-level audio exists at 96 and 128 kbps only. */
+  audioBitrate: import.meta.env.WXT_AUDIO_BITRATE ?? "128",
+  /** Reciter id, e.g. `ar.alafasy`. All 114 surahs exist for every 128k id. */
+  audioReciter: import.meta.env.WXT_AUDIO_RECITER ?? "ar.alafasy",
   /** Public site page for a full surah, opened by "read more". */
   surahDetailsUrl: required(
     import.meta.env.WXT_SURAH_DETAILS_URL,

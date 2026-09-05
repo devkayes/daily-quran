@@ -16,11 +16,11 @@ export const MESSAGE_KEYS = [
   "restart",
   "volume",
   "progress",
-  "comingSoon",
   "ayahLoadError",
   "audioLoadError",
   "retry",
   "loadingAyah",
+  "loadingAudio",
   "surahListLabel",
   "footerLink",
 ] as const;

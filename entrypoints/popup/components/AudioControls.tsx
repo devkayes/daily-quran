@@ -12,9 +12,18 @@ interface Props {
   onVolumeChange: (volume: number) => void;
 }
 
-const iconClass = "h-[15px] w-[15px] px-px py-1.5";
-const buttonClass =
-  "flex items-center justify-center rounded-full border border-black bg-transparent cursor-pointer focus-visible:outline-2 focus-visible:outline-olive focus-visible:outline-offset-2";
+/*
+ * v1 sized these icons 15x15 *with* 6px padding under the browser default
+ * `content-box`, so the glyph was a full 15px and the button came out ~27px.
+ * Tailwind's preflight sets `border-box`, which made that same padding eat the
+ * icon down to a 13x3 sliver -- visible as empty circles. The control is sized
+ * explicitly now and the icon carries no padding, so neither box model changes
+ * the result.
+ */
+const CONTROL = "h-[27px] w-[27px] shrink-0";
+const iconClass = "block h-[15px] w-[15px]";
+const controlClass = `${CONTROL} flex items-center justify-center rounded-full border border-black bg-transparent`;
+const buttonClass = `${controlClass} cursor-pointer focus-visible:outline-2 focus-visible:outline-olive focus-visible:outline-offset-2`;
 
 export function AudioControls({
   playback,
@@ -26,11 +35,21 @@ export function AudioControls({
   onVolumeChange,
 }: Props) {
   const isPlaying = playback.status === "playing";
+  const isLoading = playback.status === "loading";
   const duration = playback.duration > 0 ? playback.duration : 0;
 
   return (
     <div className="my-[10px] flex h-10 items-center justify-evenly">
-      {isPlaying ? (
+      {isLoading ? (
+        <span
+          className={`${controlClass} cursor-default`}
+          role="status"
+          aria-label={t("loadingAudio")}
+          title={t("loadingAudio")}
+        >
+          <span className="dq-spinner text-[15px]" />
+        </span>
+      ) : isPlaying ? (
         <button
           type="button"
           onClick={onPause}

@@ -56,6 +56,13 @@ export class AudioHost {
     this.#surahNumber = command.surahNumber;
     audio.volume = clamp01(command.volume);
 
+    // Announced first, before src/load(): load() fires a `pause` event, and the
+    // loading status is exactly what tells the pause handler to ignore it.
+    // Emitting here also lets the popup show a spinner while a long surah
+    // downloads -- Al-Baqarah is over 100 MB.
+    this.#status = "loading";
+    this.#emit();
+
     const isSameSource = audio.currentSrc === command.url || audio.src === command.url;
 
     if (!isSameSource) {
@@ -79,6 +86,8 @@ export class AudioHost {
 
   pause(): void {
     this.#audio.pause();
+    this.#status = "paused";
+    this.#emit();
   }
 
   /** Rewind to the start and play from there. */
@@ -120,9 +129,18 @@ export class AudioHost {
     });
 
     audio.addEventListener("pause", () => {
-      // `ended` also fires a `pause`; keep the terminal state.
-      if (this.#status === "ended") return;
+      // `ended` also fires a `pause`; keep the terminal state. `load()` fires
+      // one too, which must not look like the user pausing mid-fetch —
+      // an explicit pause() sets the status itself.
+      if (this.#status === "ended" || this.#status === "loading") return;
       this.#status = "paused";
+      this.#emit();
+    });
+
+    // Buffering after playback has already started.
+    audio.addEventListener("waiting", () => {
+      if (this.#status !== "playing") return;
+      this.#status = "loading";
       this.#emit();
     });
 
