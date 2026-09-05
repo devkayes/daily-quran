@@ -109,8 +109,14 @@ export function useContinuousPlayback(): [boolean, (next: boolean) => void] {
     void continuousPlaybackItem.getValue().then((value) => {
       if (active) setEnabled(value);
     });
+
+    // The setting can also be changed from the page context menu, so follow
+    // storage rather than trusting our own last write.
+    const unwatch = continuousPlaybackItem.watch((value) => setEnabled(value));
+
     return () => {
       active = false;
+      unwatch();
     };
   }, []);
 

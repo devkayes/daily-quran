@@ -23,6 +23,8 @@ export const MESSAGE_KEYS = [
   "loadingAudio",
   "surahListLabel",
   "continuous",
+  "nextSurah",
+  "previousSurah",
   "continuousHint",
   "creditsAyah",
   "creditsAudio",

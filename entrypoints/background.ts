@@ -1,5 +1,12 @@
+import { browser } from "#imports";
 import { createAudioController } from "@/lib/audio-controller";
 import { audioUrlFor } from "@/lib/audio-url";
+import {
+  createContextMenu,
+  registerMenuHandlers,
+  syncContinuousChecked,
+  syncPlayPauseLabel,
+} from "@/lib/context-menu";
 import { broadcastQuietly, onMessage, type PlaybackState } from "@/lib/messaging";
 import {
   audioDurationItem,
@@ -8,7 +15,7 @@ import {
   playbackPositionItem,
   volumeItem,
 } from "@/lib/storage";
-import { findSurah, type Surah } from "@/lib/surahs";
+import { FIRST_SURAH, findSurah, type Surah } from "@/lib/surahs";
 
 /** How often playback position is written while audio is running. */
 const POSITION_PERSIST_INTERVAL_MS = 1000;
@@ -74,6 +81,8 @@ export default defineBackground({
       });
       broadcastQuietly(state);
 
+      syncPlayPauseLabel(state);
+
       if (state.status === "ended") {
         void advance(state).catch(() => {
           // Failing to queue the next surah leaves playback stopped, which is
@@ -113,5 +122,59 @@ export default defineBackground({
     });
 
     onMessage("getPlaybackState", () => audio.getState());
+
+    // ---- page context menu ----
+
+    /** Resumes what was last played, or starts Al-Fatiha. */
+    async function resumeOrStart(): Promise<void> {
+      const last = await nowPlayingItem.getValue();
+      const surah = last ? findSurah(last.surahNumber) : undefined;
+      await start(surah ?? FIRST_SURAH);
+    }
+
+    registerMenuHandlers({
+      async togglePlayPause() {
+        const state = await audio.getState();
+        if (state.status === "playing") {
+          await audio.pause();
+          return;
+        }
+        // Resuming a loaded surah keeps its position; otherwise start fresh.
+        if (state.surahNumber !== null) {
+          const surah = findSurah(state.surahNumber);
+          if (surah) {
+            await audio.play({
+              url: audioUrlFor(surah),
+              surahNumber: surah.number,
+              name: surah.name,
+              volume: await volumeItem.getValue(),
+              startAt: await playbackPositionItem.getValue(),
+            });
+            return;
+          }
+        }
+        await resumeOrStart();
+      },
+
+      restart: () => audio.restart(),
+
+      async step(delta) {
+        const last = await nowPlayingItem.getValue();
+        const current = last?.surahNumber ?? FIRST_SURAH.number;
+        const next = findSurah(current + delta);
+        if (!next) return;
+        await start(next);
+      },
+
+      async setContinuous(enabled) {
+        await continuousPlaybackItem.setValue(enabled);
+      },
+    });
+
+    // Rebuild on install/update, and keep the checkbox in step with the popup.
+    browser.runtime.onInstalled.addListener(() => {
+      void continuousPlaybackItem.getValue().then(createContextMenu);
+    });
+    continuousPlaybackItem.watch((enabled) => syncContinuousChecked(enabled));
   },
 });

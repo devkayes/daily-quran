@@ -86,7 +86,9 @@ export default defineConfig({
 
       // Firefox MV3 uses an event page with DOM access, so it plays audio in
       // the background directly and never needs the offscreen permission.
-      permissions: isFirefox ? ["storage"] : ["storage", "offscreen"],
+      permissions: isFirefox
+        ? ["storage", "contextMenus"]
+        : ["storage", "offscreen", "contextMenus"],
 
       // Only the ayah API is fetched. Recitations load through an <audio>
       // element, which media-src covers -- asking for host access to the CDN

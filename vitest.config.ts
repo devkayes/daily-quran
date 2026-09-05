@@ -10,6 +10,7 @@ export default defineConfig({
     environment: "happy-dom",
     include: ["tests/**/*.test.ts", "tests/**/*.test.tsx"],
     restoreMocks: true,
+    setupFiles: ["./tests/setup.ts"],
     coverage: {
       provider: "v8",
       include: ["lib/**/*.ts"],

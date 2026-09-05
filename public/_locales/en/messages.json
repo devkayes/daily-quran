@@ -50,6 +50,12 @@
   "continuous": {
     "message": "Continuous"
   },
+  "nextSurah": {
+    "message": "Next surah"
+  },
+  "previousSurah": {
+    "message": "Previous surah"
+  },
   "continuousHint": {
     "message": "Play the next surah when the current one finishes"
   },

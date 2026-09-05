@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 ### Added
+- **Audio controls in the page right-click menu**, under a single "Daily Quran"
+  entry: play/pause, restart, previous and next surah, and a continuous
+  checkbox. The play/pause label follows the actual playback state, and the
+  checkbox stays in step with the popup in both directions. Needs the new
+  `contextMenus` permission.
 - A **continuous playback** control: a repeat button in the transport row that
   highlights when on. Finishing a surah then starts the next one automatically.
   It stops after An-Nas rather than wrapping back to Al-Fatiha, and the setting

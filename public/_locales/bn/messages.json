@@ -50,6 +50,12 @@
   "continuous": {
     "message": "একটানা"
   },
+  "nextSurah": {
+    "message": "পরের সূরা"
+  },
+  "previousSurah": {
+    "message": "আগের সূরা"
+  },
   "continuousHint": {
     "message": "একটি সূরা শেষ হলে পরেরটি আপনা-আপনি চলবে"
   },
