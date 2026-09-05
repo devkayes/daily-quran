@@ -1,0 +1,21 @@
+{
+  "extName": { "message": "Daily Quran" },
+  "extDescription": {
+    "message": "Access and reflect on Quranic verses anytime, directly from your browser."
+  },
+  "ayatLabel": { "message": "Ayah" },
+  "readMore": { "message": "Read more..." },
+  "reloadAyah": { "message": "Load a new ayah" },
+  "play": { "message": "Play" },
+  "pause": { "message": "Pause" },
+  "restart": { "message": "Restart" },
+  "volume": { "message": "Volume" },
+  "progress": { "message": "Audio progress" },
+  "comingSoon": { "message": "Available soon — looking forward to your response." },
+  "ayahLoadError": { "message": "Could not load an ayah. Please try again." },
+  "audioLoadError": { "message": "This recitation could not be loaded." },
+  "retry": { "message": "Try again" },
+  "loadingAyah": { "message": "Loading ayah..." },
+  "surahListLabel": { "message": "Surah list" },
+  "footerLink": { "message": "Daily Quran" }
+}

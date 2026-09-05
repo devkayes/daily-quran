@@ -2,6 +2,49 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0] - 2026-09-05
+
+A technical release. No new features: the extension does what 1.1.3 did, on a
+foundation that can be maintained. See [CONTRIBUTING.md](./CONTRIBUTING.md) for
+the stack and the reasoning.
+
+### Changed
+- Rebuilt on [WXT](https://wxt.dev) with TypeScript in `strict` mode, React 19
+  and Tailwind CSS v4. The extension now has a build step, a type checker, a
+  linter and a test suite.
+- Playback state moved from `localStorage` to `chrome.storage`. An MV3 service
+  worker cannot read `localStorage`, so half of v1's state was structurally
+  invisible to the background.
+- Messages between the popup, background and audio host are a typed protocol
+  instead of untyped `{ type }` objects routed through a string `switch`.
+- The ayah API response is validated with Zod before rendering, so an
+  unexpected shape produces an error state instead of a broken popup.
+- The popup renders the last ayah from cache immediately and revalidates behind
+  it, instead of showing a hardcoded verse until the reload button was pressed.
+- Audio for Firefox plays in the background event page rather than an offscreen
+  document, behind a shared interface. Chrome and Edge are unchanged.
+- Endpoints moved from an untracked `config.js` of globals to `.env` files
+  resolved at build time.
+- "Restart" now rewinds and plays from the beginning, rather than stopping.
+
+### Added
+- Bengali and English translations via `_locales`, following the browser's
+  language. A missing translation now fails the test suite.
+- MediaSession support, so OS media keys and the system player control
+  recitation.
+- 53 unit tests and 6 end-to-end tests that drive the real built extension.
+- GitHub Actions for typecheck, lint, tests, both browser builds, and releases.
+
+### Security
+- Content Security Policy tightened to `default-src 'self'` with an explicit
+  allowlist per directive, and network hosts declared as `host_permissions`.
+- Removed the invalid `https://www.kayes.dev/*` CSP source, which could never
+  have matched.
+
+### Removed
+- `offline_enabled` from the manifest. Every ayah and recitation is fetched over
+  the network, so the claim was not accurate.
+
 ## [1.1.3] - 2026-09-05
 ### Security
 - Ayah text from the API is now written with `textContent` instead of `innerHTML`, so remote content can no longer inject markup into the extension page.

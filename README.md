@@ -46,6 +46,29 @@ If you have any questions, suggestions, or need support, feel free to reach out:
 
 We welcome your feedback and contributions!
 
+## Development
+
+Daily Quran 2.0 is built with [WXT](https://wxt.dev), TypeScript, React 19 and
+Tailwind CSS v4, and builds for Chrome, Edge and Firefox from one source.
+
+```bash
+corepack enable
+pnpm install
+cp .env.example .env.development   # then fill in the endpoints
+pnpm dev                            # Chrome, with hot reload
+pnpm dev:firefox
+```
+
+| Command | What it does |
+| --- | --- |
+| `pnpm check` | Typecheck, lint and unit tests |
+| `pnpm test` | Vitest unit tests |
+| `pnpm test:e2e` | Playwright, against a real built extension |
+| `pnpm build` / `pnpm build:firefox` | Production build |
+| `pnpm zip` / `pnpm zip:firefox` | Store-ready package |
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) before opening a pull request.
+
 ## Contributing to Daily Quran
 
 Developers are welcome to contribute to this project and help make it more dynamic. Before contributing I will suggest you to read [Developers Guide](./CONTRIBUTING.md)
@@ -53,7 +76,7 @@ Developers are welcome to contribute to this project and help make it more dynam
 ## License
 
 This project is licensed under a **Custom License**.  
-Please read the full [LICENSE](./LICENSE.md) file for details.
+Please read the full [LICENSE](./LICENSE.txt) file for details.
 
 ### Key Points:
 - Developers are welcome to contribute to the project.

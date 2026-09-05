@@ -1,2 +1,15 @@
-config.js
-versions
+node_modules
+.wxt
+.output
+dist
+coverage
+test-results
+playwright-report
+
+# Real credentials / overrides. .env.development and .env.production are
+# committed on purpose: they hold public endpoints, not secrets.
+.env
+.env.local
+.env.*.local
+
+.DS_Store

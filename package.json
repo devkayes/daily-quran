@@ -1,0 +1,47 @@
+{
+  "name": "daily-quran",
+  "version": "2.0.0",
+  "description": "Access and reflect on Quranic verses anytime, directly from your browser.",
+  "author": "its-kayes",
+  "license": "SEE LICENSE IN LICENSE.txt",
+  "homepage": "https://www.kayes.dev/talks/daily-quran",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wxt",
+    "dev:firefox": "wxt -b firefox",
+    "build": "wxt build",
+    "build:firefox": "wxt build -b firefox",
+    "zip": "wxt zip",
+    "zip:firefox": "wxt zip -b firefox",
+    "compile": "tsc --noEmit",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "check": "pnpm compile && pnpm lint && pnpm test",
+    "postinstall": "wxt prepare"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.12",
+    "@playwright/test": "^1.62.1",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@vitest/coverage-v8": "^5.0.0",
+    "@webext-core/messaging": "^4.0.0",
+    "@wxt-dev/module-react": "^1.2.2",
+    "happy-dom": "^20.14.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.0",
+    "wxt": "^0.21.4"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.102.8",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "zod": "^4.5.4"
+  }
+}

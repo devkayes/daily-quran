@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+@theme {
+  --color-parchment: #ebece7;
+  --color-ink: #1f1f1a;
+  --color-olive: #565100;
+  --color-violet: #6a547f;
+  --color-muted: #848282;
+  --color-disabled: #a0a0a0;
+
+  --font-arabic: "Noorehuda", serif;
+}
+
+@font-face {
+  font-family: "Noorehuda";
+  src: url("/fonts/noorehuda-regular.woff2") format("woff2");
+  font-weight: 300 700;
+  font-display: swap;
+  font-style: normal;
+}
+
+body {
+  min-width: 350px;
+  max-width: 500px;
+  background-color: var(--color-parchment);
+  color: var(--color-ink);
+  font-size: 16px;
+}
+
+/*
+ * Range inputs keep v1's look. They are styled here rather than with utility
+ * classes because the thumb pseudo-elements need per-engine selectors.
+ */
+.dq-range {
+  appearance: none;
+  -webkit-appearance: none;
+  height: 5px;
+  background: var(--color-muted);
+  border-radius: 40px;
+  outline: none;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+  cursor: pointer;
+}
+
+.dq-range:hover,
+.dq-range:focus-visible {
+  opacity: 1;
+}
+
+.dq-range:focus-visible {
+  outline: 2px solid var(--color-olive);
+  outline-offset: 3px;
+}
+
+.dq-range::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  background: #000;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.dq-range::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: #000;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dq-range {
+    transition: none;
+  }
+}
