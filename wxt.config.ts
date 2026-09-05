@@ -45,11 +45,16 @@ export default defineConfig({
   manifestVersion: 3,
   outDir: ".output",
 
-  vite: () => ({
+  vite: ({ command }) => ({
     plugins: [tailwindcss()],
+    build: {
+      // Debug against the original TypeScript. Kept out of production builds so
+      // the store package stays small and does not ship the sources.
+      sourcemap: command === "serve" ? "inline" : false,
+    },
   }),
 
-  manifest: ({ browser, mode }) => {
+  manifest: ({ browser, mode, command }) => {
     const env = loadEnv(mode ?? "production");
     const apiOrigin = originOf(env.WXT_API_BASE_URL, "https://pro.proggamoyquran.com");
     const audioOrigin = originOf(
@@ -57,6 +62,13 @@ export default defineConfig({
       "https://daily-quran-dev.s3.ap-south-1.amazonaws.com",
     );
     const isFirefox = browser === "firefox";
+
+    // `wxt dev` serves modules and the HMR socket from a local Vite server. WXT
+    // adds that origin to script-src itself, but not to connect-src, and this
+    // config sets an explicit connect-src -- so without this the reload socket
+    // is blocked and hot reload silently stops working.
+    const devConnectSrc =
+      command === "serve" ? " http://localhost:* ws://localhost:*" : "";
 
     return {
       name: "__MSG_extName__",
@@ -80,7 +92,7 @@ export default defineConfig({
           "img-src 'self' data:",
           "font-src 'self'",
           `media-src 'self' ${audioOrigin}`,
-          `connect-src 'self' ${apiOrigin} ${audioOrigin}`,
+          `connect-src 'self' ${apiOrigin} ${audioOrigin}${devConnectSrc}`,
           `form-action 'none'`,
           `frame-ancestors 'none'`,
         ].join("; "),
