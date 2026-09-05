@@ -306,4 +306,127 @@ test.describe("popup", () => {
     });
     await expect(spinner).toHaveCount(0);
   });
+  const continuousButton = (page: Page) =>
+    page.getByRole("button", { name: label("continuous") });
+
+  test("the continuous setting persists across popup reopens", async ({
+    context,
+    extensionId,
+  }) => {
+    const page = await context.newPage();
+    await context.route(AYAH_ROUTE, (route) => route.fulfill({ json: AYAH_FIXTURE }));
+    await page.goto(`chrome-extension://${extensionId}/popup.html`);
+
+    await expect(continuousButton(page)).toHaveAttribute("aria-pressed", "false");
+
+    await continuousButton(page).click();
+    await expect(continuousButton(page)).toHaveAttribute("aria-pressed", "true");
+
+    await expect.poll(async () => readStorage(page, "continuousPlayback")).toBe(true);
+
+    await page.reload();
+    await expect(continuousButton(page)).toHaveAttribute("aria-pressed", "true");
+  });
+
+  /**
+   * Plays to a genuine `ended` event rather than seeking exactly to the
+   * duration: those are different code paths, and only this one matches what a
+   * listener actually experiences.
+   */
+  test("with continuous on, finishing a surah starts the next one", async ({
+    context,
+    extensionId,
+  }) => {
+    test.setTimeout(120_000);
+    const page = await context.newPage();
+    await context.route(AYAH_ROUTE, (route) => route.fulfill({ json: AYAH_FIXTURE }));
+    await page.goto(`chrome-extension://${extensionId}/popup.html`);
+
+    await continuousButton(page).click();
+    await expect(continuousButton(page)).toHaveAttribute("aria-pressed", "true");
+
+    // Al-Falaq (113); its successor An-Nas (114) is unambiguous.
+    await page.getByRole("button", { name: /১১৩\. সূরা আল ফালাক/ }).click();
+
+    const nowPlayingNumber = async () =>
+      ((await readStorage(page, "nowPlaying")) as { surahNumber?: number } | null)
+        ?.surahNumber;
+    const duration = async () => Number(await readStorage(page, "audioDuration")) || 0;
+
+    await expect.poll(nowPlayingNumber, { timeout: 30_000 }).toBe(113);
+    await expect.poll(duration, { timeout: 30_000 }).toBeGreaterThan(0);
+
+    // Skip to just before the end and let playback finish on its own.
+    await page.evaluate(
+      (target) => {
+        const slider = document.querySelector<HTMLInputElement>('input[type="range"]');
+        if (!slider) return;
+        slider.value = String(target);
+        slider.dispatchEvent(new Event("input", { bubbles: true }));
+      },
+      Math.max(0, (await duration()) - 2),
+    );
+
+    await expect.poll(nowPlayingNumber, { timeout: 60_000 }).toBe(114);
+  });
+
+  test("with continuous off, playback stops at the end", async ({
+    context,
+    extensionId,
+  }) => {
+    test.setTimeout(120_000);
+    const page = await context.newPage();
+    await context.route(AYAH_ROUTE, (route) => route.fulfill({ json: AYAH_FIXTURE }));
+    await page.goto(`chrome-extension://${extensionId}/popup.html`);
+
+    await expect(continuousButton(page)).toHaveAttribute("aria-pressed", "false");
+    await page.getByRole("button", { name: /১১৩\. সূরা আল ফালাক/ }).click();
+
+    const nowPlayingNumber = async () =>
+      ((await readStorage(page, "nowPlaying")) as { surahNumber?: number } | null)
+        ?.surahNumber;
+    const duration = async () => Number(await readStorage(page, "audioDuration")) || 0;
+
+    await expect.poll(nowPlayingNumber, { timeout: 30_000 }).toBe(113);
+    await expect.poll(duration, { timeout: 30_000 }).toBeGreaterThan(0);
+
+    await page.evaluate(
+      (target) => {
+        const slider = document.querySelector<HTMLInputElement>('input[type="range"]');
+        if (!slider) return;
+        slider.value = String(target);
+        slider.dispatchEvent(new Event("input", { bubbles: true }));
+      },
+      Math.max(0, (await duration()) - 2),
+    );
+
+    // It must reach the end and stay put.
+    await expect(page.getByRole("button", { name: label("play") })).toBeVisible({
+      timeout: 60_000,
+    });
+    expect(await nowPlayingNumber()).toBe(113);
+  });
+
+  test("credits name both the ayah and recitation sources", async ({
+    context,
+    extensionId,
+  }) => {
+    const page = await context.newPage();
+    await context.route(AYAH_ROUTE, (route) => route.fulfill({ json: AYAH_FIXTURE }));
+    await page.goto(`chrome-extension://${extensionId}/popup.html`);
+
+    const footer = page.locator("footer");
+    await expect(footer).toContainText(label("creditsAyah"));
+    await expect(footer).toContainText(label("creditsAudio"));
+    await expect(footer).toContainText("Mishary Rashid Alafasy");
+
+    await expect(footer.getByRole("link", { name: "Proggamoy Quran" })).toHaveAttribute(
+      "href",
+      /proggamoyquran\.com/,
+    );
+    await expect(footer.getByRole("link", { name: "Islamic Network" })).toHaveAttribute(
+      "href",
+      /islamic\.network/,
+    );
+  });
 });

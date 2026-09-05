@@ -47,6 +47,21 @@
   "surahListLabel": {
     "message": "Surah list"
   },
+  "continuous": {
+    "message": "Continuous"
+  },
+  "continuousHint": {
+    "message": "Play the next surah when the current one finishes"
+  },
+  "creditsAyah": {
+    "message": "Ayah & translation"
+  },
+  "creditsAudio": {
+    "message": "Recitation"
+  },
+  "creditsIntro": {
+    "message": "Sources"
+  },
   "footerLink": {
     "message": "Daily Quran"
   }

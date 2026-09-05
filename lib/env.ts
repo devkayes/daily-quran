@@ -31,6 +31,14 @@ export const env = {
   audioBitrate: import.meta.env.WXT_AUDIO_BITRATE ?? "128",
   /** Reciter id, e.g. `ar.alafasy`. All 114 surahs exist for every 128k id. */
   audioReciter: import.meta.env.WXT_AUDIO_RECITER ?? "ar.alafasy",
+  /** Human-readable reciter name, for the credits. */
+  audioReciterName: import.meta.env.WXT_AUDIO_RECITER_NAME ?? "Mishary Rashid Alafasy",
+  /** Who to credit for the recitations, and where to link. */
+  audioSourceName: "Islamic Network",
+  audioSourceUrl: "https://islamic.network",
+  /** Who to credit for the ayah text and Bengali translation. */
+  ayahSourceName: "Proggamoy Quran",
+  ayahSourceUrl: import.meta.env.WXT_AYAH_SOURCE_URL ?? "https://proggamoyquran.com",
   /** Public site page for a full surah, opened by "read more". */
   surahDetailsUrl: required(
     import.meta.env.WXT_SURAH_DETAILS_URL,

@@ -22,6 +22,11 @@ export const MESSAGE_KEYS = [
   "loadingAyah",
   "loadingAudio",
   "surahListLabel",
+  "continuous",
+  "continuousHint",
+  "creditsAyah",
+  "creditsAudio",
+  "creditsIntro",
   "footerLink",
 ] as const;
 

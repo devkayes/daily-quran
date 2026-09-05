@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 ### Added
+- A **continuous playback** control: a repeat button in the transport row that
+  highlights when on. Finishing a surah then starts the next one automatically.
+  It stops after An-Nas rather than wrapping back to Al-Fatiha, and the setting
+  persists. The advance runs in the background, so it works with the popup
+  closed.
+- Source credits in the footer, naming and linking the ayah text and Bengali
+  translation (Proggamoy Quran) and the recitations (reciter name, Islamic
+  Network).
 - Recitations for **all 114 surahs**. Audio moved to the Islamic Network CDN
   (`cdn.islamic.network/quran/audio-surah/{bitrate}/{reciter}/{number}.mp3`),
   replacing the private S3 bucket that carried 33. The disabled "coming soon"
@@ -14,6 +22,13 @@ All notable changes to this project will be documented in this file.
   the surah name and in place of the play control. It also reappears if the
   stream stalls mid-playback. Matters more now that the longest surahs are
   large files.
+
+### Fixed
+- The play, pause and restart icons rendered as empty circles. They were sized
+  15x15 with 6px padding, which was correct under the browser's default
+  `content-box` but left a 13x3 content area under Tailwind's `border-box`
+  preflight. The controls are sized explicitly now, so neither box model
+  changes the result.
 
 ### Changed
 - A surah's recitation is addressed by its number, so no per-surah audio path

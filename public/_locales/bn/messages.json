@@ -47,6 +47,21 @@
   "surahListLabel": {
     "message": "সূরার তালিকা"
   },
+  "continuous": {
+    "message": "একটানা"
+  },
+  "continuousHint": {
+    "message": "একটি সূরা শেষ হলে পরেরটি আপনা-আপনি চলবে"
+  },
+  "creditsAyah": {
+    "message": "আয়াত ও অনুবাদ"
+  },
+  "creditsAudio": {
+    "message": "তিলাওয়াত"
+  },
+  "creditsIntro": {
+    "message": "উৎস"
+  },
   "footerLink": {
     "message": "Daily Quran"
   }

@@ -1,18 +1,24 @@
 import { audioUrlFor } from "@/lib/audio-url";
-import { env } from "@/lib/env";
 import { t } from "@/lib/i18n";
 import { sendMessage } from "@/lib/messaging";
 import { nowPlayingItem, playbackPositionItem } from "@/lib/storage";
 import { FIRST_SURAH, type Surah } from "@/lib/surahs";
 import { AudioControls } from "./components/AudioControls";
 import { AyahCard } from "./components/AyahCard";
+import { Credits } from "./components/Credits";
 import { SurahList } from "./components/SurahList";
-import { useDailyAyah, usePlaybackState, useVolume } from "./hooks";
+import {
+  useContinuousPlayback,
+  useDailyAyah,
+  usePlaybackState,
+  useVolume,
+} from "./hooks";
 
 export function App() {
   const ayahQuery = useDailyAyah();
   const playback = usePlaybackState();
   const [volume, setVolume] = useVolume();
+  const [continuous, setContinuous] = useContinuousPlayback();
 
   async function play(surah?: Surah): Promise<void> {
     // A surah picked from the list always starts from the beginning.
@@ -70,6 +76,8 @@ export function App() {
         onRestart={() => void sendMessage("restart", undefined).catch(() => {})}
         onSeek={(seconds) => void sendMessage("seek", seconds).catch(() => {})}
         onVolumeChange={setVolume}
+        continuous={continuous}
+        onToggleContinuous={setContinuous}
       />
 
       {playback.status === "error" ? (
@@ -84,14 +92,7 @@ export function App() {
         onSelect={(surah) => void play(surah)}
       />
 
-      <a
-        href={env.aboutUrl}
-        target="_blank"
-        rel="noreferrer noopener"
-        className="mt-2 flex justify-center text-xs underline"
-      >
-        {t("footerLink")}
-      </a>
+      <Credits />
     </main>
   );
 }

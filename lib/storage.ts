@@ -62,6 +62,15 @@ export const cachedAyahItem = storage.defineItem<CachedAyah | null>(
   { fallback: null, version: 1 },
 );
 
+/**
+ * When on, finishing a surah starts the next one. Read by the background when
+ * the audio host reports "ended".
+ */
+export const continuousPlaybackItem = storage.defineItem<boolean>(
+  "local:continuousPlayback",
+  { fallback: false, version: 1 },
+);
+
 /** Clears playback state. Used when switching to a different surah. */
 export async function resetPlaybackPosition(): Promise<void> {
   await playbackPositionItem.setValue(0);

@@ -7,7 +7,12 @@ import {
   type PlaybackState,
   sendMessage,
 } from "@/lib/messaging";
-import { type CachedAyah, cachedAyahItem, volumeItem } from "@/lib/storage";
+import {
+  type CachedAyah,
+  cachedAyahItem,
+  continuousPlaybackItem,
+  volumeItem,
+} from "@/lib/storage";
 
 export const AYAH_QUERY_KEY = ["daily-ayah"] as const;
 
@@ -93,4 +98,26 @@ export function useVolume(): [number, (next: number) => void] {
   };
 
   return [volume, update];
+}
+
+/** Whether finishing a surah should start the next one. Persisted. */
+export function useContinuousPlayback(): [boolean, (next: boolean) => void] {
+  const [enabled, setEnabled] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void continuousPlaybackItem.getValue().then((value) => {
+      if (active) setEnabled(value);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const update = (next: boolean) => {
+    setEnabled(next);
+    void continuousPlaybackItem.setValue(next).catch(() => {});
+  };
+
+  return [enabled, update];
 }
