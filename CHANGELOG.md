@@ -21,9 +21,9 @@ All notable changes to this project will be documented in this file.
   It stops after An-Nas rather than wrapping back to Al-Fatiha, and the setting
   persists. The advance runs in the background, so it works with the popup
   closed.
-- Source credits in the footer, naming and linking the ayah text and Bengali
-  translation (Proggamoy Quran) and the recitations (reciter name, Islamic
-  Network).
+- Source credits in the footer, naming whichever translation is on screen:
+  Proggamoy Quran in Bengali, Saheeh International via AlQuran Cloud in
+  English. Recitations are credited in both.
 - Recitations for **all 114 surahs**. Audio moved to the Islamic Network CDN
   (`cdn.islamic.network/quran/audio-surah/{bitrate}/{reciter}/{number}.mp3`),
   replacing the private S3 bucket that carried 33. The disabled "coming soon"

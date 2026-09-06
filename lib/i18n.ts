@@ -29,6 +29,7 @@ export const MESSAGE_KEYS = [
   "previousSurah",
   "continuousHint",
   "creditsAyah",
+  "creditsTranslation",
   "creditsAudio",
   "creditsIntro",
   "footerLink",

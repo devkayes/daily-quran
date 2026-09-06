@@ -443,7 +443,7 @@ test.describe("popup", () => {
     expect(await nowPlayingNumber()).toBe(113);
   });
 
-  test("credits name both the ayah and recitation sources", async ({
+  test("credits name the ayah and recitation sources in Bengali mode", async ({
     context,
     extensionId,
   }) => {
@@ -464,6 +464,38 @@ test.describe("popup", () => {
       "href",
       /islamic\.network/,
     );
+
+    // The English translator is only credited when English is on screen.
+    await expect(footer).not.toContainText("AlQuran Cloud");
+  });
+
+  test("credits add the English translation source when English is chosen", async ({
+    context,
+    extensionId,
+  }) => {
+    const page = await context.newPage();
+    await context.route(AYAH_ROUTE, (route) => route.fulfill({ json: AYAH_FIXTURE }));
+    await context.route(EN_ROUTE, (route) => route.fulfill({ json: EN_FIXTURE }));
+    await page.goto(`chrome-extension://${extensionId}/popup.html`);
+
+    await page.locator("label").filter({ hasText: /^EN$/ }).click();
+
+    const footer = page.locator("footer");
+    await expect(footer).toContainText(label("creditsTranslation"));
+    await expect(footer).toContainText("Saheeh International");
+    await expect(footer.getByRole("link", { name: "AlQuran Cloud" })).toHaveAttribute(
+      "href",
+      /alquran\.cloud/,
+    );
+
+    // Only the translation actually on screen is named.
+    await expect(footer).not.toContainText("Proggamoy Quran");
+    await expect(footer).toContainText("Mishary Rashid Alafasy");
+
+    // Switching back restores the Bengali source and drops the English one.
+    await page.locator("label").filter({ hasText: /^BN$/ }).click();
+    await expect(footer).not.toContainText("AlQuran Cloud");
+    await expect(footer.getByRole("link", { name: "Proggamoy Quran" })).toBeVisible();
   });
 
   test("defaults to Bengali and switches to English on demand", async ({

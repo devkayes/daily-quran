@@ -27,6 +27,10 @@ export const env = {
     import.meta.env.WXT_EN_API_BASE_URL ?? "https://api.alquran.cloud/v1"
   ).replace(/\/$/, ""),
   englishEdition: import.meta.env.WXT_EN_EDITION ?? "en.sahih",
+  /** Translator credited in the footer while English is selected. */
+  englishEditionName: import.meta.env.WXT_EN_EDITION_NAME ?? "Saheeh International",
+  englishSourceName: "AlQuran Cloud",
+  englishSourceUrl: "https://alquran.cloud",
   /** Root of the surah recitation CDN. */
   audioBaseUrl: required(
     import.meta.env.WXT_AUDIO_BASE_URL,

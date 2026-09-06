@@ -101,7 +101,7 @@ export function App() {
         onSelect={(surah) => void play(surah)}
       />
 
-      <Credits />
+      <Credits language={language} />
     </main>
   );
 }

@@ -68,6 +68,9 @@
   "creditsAyah": {
     "message": "Ayah & translation"
   },
+  "creditsTranslation": {
+    "message": "Translation"
+  },
   "creditsAudio": {
     "message": "Recitation"
   },
