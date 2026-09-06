@@ -10,7 +10,9 @@ import { SurahList } from "./components/SurahList";
 import {
   useContinuousPlayback,
   useDailyAyah,
+  useEnglishAyah,
   usePlaybackState,
+  useTranslationLanguage,
   useVolume,
 } from "./hooks";
 
@@ -19,6 +21,8 @@ export function App() {
   const playback = usePlaybackState();
   const [volume, setVolume] = useVolume();
   const [continuous, setContinuous] = useContinuousPlayback();
+  const [language, setLanguage] = useTranslationLanguage();
+  const englishQuery = useEnglishAyah(ayahQuery.data, language === "en");
 
   async function play(surah?: Surah): Promise<void> {
     // A surah picked from the list always starts from the beginning.
@@ -66,6 +70,11 @@ export function App() {
         isFetching={ayahQuery.isFetching}
         isError={ayahQuery.isError}
         onReload={() => void ayahQuery.refetch()}
+        language={language}
+        onLanguageChange={setLanguage}
+        english={englishQuery.data}
+        englishLoading={englishQuery.isFetching}
+        englishError={englishQuery.isError}
       />
 
       <AudioControls

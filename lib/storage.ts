@@ -24,9 +24,19 @@ export interface CachedAyah {
   readonly ayatMean: string;
   /** Epoch ms, so the popup can decide whether to revalidate. */
   readonly fetchedAt: number;
+  /** Filled in lazily the first time this ayah is read in English. */
+  readonly english?: { readonly text: string; readonly surahName: string };
 }
 
+/** Which translation the ayah is shown in. The Bengali source is unchanged. */
+export type TranslationLanguage = "bn" | "en";
+
 export const DEFAULT_VOLUME = 0.5;
+
+export const translationLanguageItem = storage.defineItem<TranslationLanguage>(
+  "local:translationLanguage",
+  { fallback: "bn", version: 1 },
+);
 
 /** 0..1. Persisted so a fresh popup opens at the volume you left. */
 export const volumeItem = storage.defineItem<number>("local:volume", {

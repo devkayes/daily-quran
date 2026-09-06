@@ -9,6 +9,8 @@ export const MESSAGE_KEYS = [
   "extName",
   "extDescription",
   "ayatLabel",
+  "translationLanguage",
+  "translationUnavailable",
   "readMore",
   "reloadAyah",
   "play",

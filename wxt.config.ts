@@ -61,6 +61,13 @@ export default defineConfig({
       env.WXT_AUDIO_BASE_URL,
       "https://cdn.islamic.network/quran/audio-surah",
     );
+    // Serves `access-control-allow-origin: *`, so it needs a connect-src entry
+    // but no host permission -- which keeps the install prompt unchanged.
+    const englishOrigin = originOf(
+      env.WXT_EN_API_BASE_URL,
+      "https://api.alquran.cloud/v1",
+    );
+
     const isFirefox = browser === "firefox";
 
     // `wxt dev` serves modules and the HMR socket from a local Vite server. WXT
@@ -104,7 +111,7 @@ export default defineConfig({
           "img-src 'self' data:",
           `font-src 'self'${devFontSrc}`,
           `media-src 'self' ${audioOrigin}`,
-          `connect-src 'self' ${apiOrigin} ${audioOrigin}${devConnectSrc}`,
+          `connect-src 'self' ${apiOrigin} ${englishOrigin} ${audioOrigin}${devConnectSrc}`,
           `form-action 'none'`,
           `frame-ancestors 'none'`,
         ].join("; "),

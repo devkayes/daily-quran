@@ -8,6 +8,12 @@
   "ayatLabel": {
     "message": "আয়াত"
   },
+  "translationLanguage": {
+    "message": "অনুবাদের ভাষা"
+  },
+  "translationUnavailable": {
+    "message": "ইংরেজি অনুবাদ আনা যায়নি।"
+  },
   "readMore": {
     "message": "আরও পড়ুন..."
   },

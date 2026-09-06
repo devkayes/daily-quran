@@ -16,9 +16,22 @@ const host = new AudioHost(audio, (state) => {
   void sendMessage("hostStateChanged", state).catch(() => {});
 });
 
-onMessage("hostPlay", ({ data }) => host.play(data));
+/*
+ * `play` and `restart` are acknowledged immediately rather than awaited.
+ * Returning their promise keeps the message channel open until playback
+ * actually begins, and on a slow connection Chrome closes the channel first --
+ * the sender then sees "message channel closed before a response was
+ * received" and treats a perfectly good play as a failure. Progress reaches
+ * the rest of the extension through state broadcasts, so nothing needs the
+ * promise.
+ */
+onMessage("hostPlay", ({ data }) => {
+  void host.play(data);
+});
 onMessage("hostPause", () => host.pause());
-onMessage("hostRestart", () => host.restart());
+onMessage("hostRestart", () => {
+  void host.restart();
+});
 onMessage("hostSetVolume", ({ data }) => host.setVolume(data));
 onMessage("hostSeek", ({ data }) => host.seek(data));
 onMessage("hostGetState", () => host.state);

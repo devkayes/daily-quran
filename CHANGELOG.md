@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 ### Added
+- A **BN/EN translation toggle** at the top of the popup, defaulting to
+  Bengali. Bengali keeps using the existing source unchanged; English is looked
+  up per ayah from AlQuran Cloud (`en.sahih`) by `surah:ayah` reference, so
+  switching language never changes which verse is shown. In English the surah
+  name and ayah number switch to English and Western digits too. The choice
+  persists, and a fetched translation is cached with the ayah so a reopened
+  popup renders it without a request.
 - **Audio controls in the page right-click menu**, under a single "Daily Quran"
   entry: play/pause, restart, previous and next surah, and a continuous
   checkbox. The play/pause label follows the actual playback state, and the
@@ -29,6 +36,16 @@ All notable changes to this project will be documented in this file.
   large files.
 
 ### Fixed
+- Continuous playback often failed to start the next surah. The offscreen
+  document answered `play` by returning the promise that settles when playback
+  *begins*, which held the extension message channel open for the whole
+  download; on a slow connection Chrome closed the channel first and the
+  background treated a successful play as a failure. Playback commands are now
+  acknowledged immediately, with progress reported through state broadcasts.
+- `AudioHost.play()` reports any internal failure instead of aborting silently.
+  Only `audio.play()` was guarded before, so anything thrown ahead of it left
+  the popup stuck on "loading" with no error.
+- A failed attempt to queue the next surah is logged rather than swallowed.
 - The play, pause and restart icons rendered as empty circles. They were sized
   15x15 with 6px padding, which was correct under the browser's default
   `content-box` but left a 13x3 content area under Tailwind's `border-box`

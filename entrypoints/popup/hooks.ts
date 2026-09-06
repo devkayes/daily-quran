@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { fetchDailyAyah } from "@/lib/api";
+import { type EnglishAyah, fetchDailyAyah, fetchEnglishAyah } from "@/lib/api";
 import {
   IDLE_PLAYBACK_STATE,
   onMessage,
@@ -11,6 +11,8 @@ import {
   type CachedAyah,
   cachedAyahItem,
   continuousPlaybackItem,
+  type TranslationLanguage,
+  translationLanguageItem,
   volumeItem,
 } from "@/lib/storage";
 
@@ -126,4 +128,63 @@ export function useContinuousPlayback(): [boolean, (next: boolean) => void] {
   };
 
   return [enabled, update];
+}
+
+/** Which translation to show. Persisted, defaults to Bengali. */
+export function useTranslationLanguage(): [
+  TranslationLanguage,
+  (next: TranslationLanguage) => void,
+] {
+  const [language, setLanguage] = useState<TranslationLanguage>("bn");
+
+  useEffect(() => {
+    let active = true;
+    void translationLanguageItem.getValue().then((value) => {
+      if (active) setLanguage(value);
+    });
+    const unwatch = translationLanguageItem.watch((value) => setLanguage(value));
+    return () => {
+      active = false;
+      unwatch();
+    };
+  }, []);
+
+  const update = (next: TranslationLanguage) => {
+    setLanguage(next);
+    void translationLanguageItem.setValue(next).catch(() => {});
+  };
+
+  return [language, update];
+}
+
+/**
+ * English text for the ayah the Bengali source already picked. Only runs when
+ * English is selected, and the result is written back into the ayah cache so a
+ * reopened popup renders instantly and works offline.
+ */
+export function useEnglishAyah(ayah: CachedAyah | undefined, enabled: boolean) {
+  return useQuery<EnglishAyah>({
+    queryKey: ["english-ayah", ayah?.surahNumber, ayah?.ayatNumber],
+    enabled: enabled && ayah !== undefined,
+    // A translation of a fixed verse never changes.
+    staleTime: Number.POSITIVE_INFINITY,
+    retry: 1,
+    // Only present when this ayah has been read in English before. Spread
+    // conditionally: the overload rejects an explicit `undefined` here.
+    ...(ayah?.english ? { initialData: ayah.english } : {}),
+    queryFn: async ({ signal }) => {
+      if (!ayah) throw new Error("No ayah to translate.");
+
+      const english = await fetchEnglishAyah(ayah.surahNumber, ayah.ayatNumber, signal);
+
+      const cached = await cachedAyahItem.getValue();
+      if (
+        cached?.surahNumber === ayah.surahNumber &&
+        cached.ayatNumber === ayah.ayatNumber
+      ) {
+        await cachedAyahItem.setValue({ ...cached, english });
+      }
+      return english;
+    },
+  });
 }

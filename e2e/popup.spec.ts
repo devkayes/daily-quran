@@ -16,6 +16,22 @@ const AYAH_FIXTURE = {
 };
 
 const AYAH_ROUTE = "**/api/v1/filter/daily-ayat*";
+const EN_ROUTE = "**/api.alquran.cloud/v1/ayah/**";
+
+/** Recitations come over a CDN whose throughput varies; budget generously. */
+const AUDIO_TIMEOUT = 90_000;
+const AUDIO_TEST_TIMEOUT = 240_000;
+
+const EN_FIXTURE = {
+  code: 200,
+  status: "OK",
+  data: {
+    number: 493,
+    text: "And whoever among you cannot afford to marry free, believing women...",
+    numberInSurah: 25,
+    surah: { number: 4, englishName: "An-Nisaa", name: "سُورَةُ النِّسَاءِ" },
+  },
+};
 
 /**
  * Reads one key from the extension's storage from inside the page. `chrome` is
@@ -223,6 +239,11 @@ test.describe("popup", () => {
   });
 
   /**
+   * The audio tests below stream real recitations, so their budgets are sized
+   * for a slow CDN rather than a fast one: an under-budgeted wait here fails
+   * as "playback never started", which reads exactly like a real bug.
+   */
+  /**
    * The regression that mattered most: selecting a surah highlighted the button
    * but never produced sound, because the audio host tried to write to
    * chrome.storage -- unavailable in a Chrome offscreen document -- and threw
@@ -236,6 +257,7 @@ test.describe("popup", () => {
     context,
     extensionId,
   }) => {
+    test.setTimeout(AUDIO_TEST_TIMEOUT);
     const page = await context.newPage();
     await context.route(AYAH_ROUTE, (route) => route.fulfill({ json: AYAH_FIXTURE }));
     await page.goto(`chrome-extension://${extensionId}/popup.html`);
@@ -247,7 +269,7 @@ test.describe("popup", () => {
 
     // Play swapping to Pause is the popup's proof the host reached "playing".
     await expect(page.getByRole("button", { name: label("pause") })).toBeVisible({
-      timeout: 20_000,
+      timeout: AUDIO_TIMEOUT,
     });
 
     // The background must have persisted what is playing -- the write the
@@ -256,14 +278,14 @@ test.describe("popup", () => {
       .poll(
         async () =>
           (await readStorage(page, "nowPlaying")) as { surahNumber?: number } | null,
-        { timeout: 15_000 },
+        { timeout: AUDIO_TIMEOUT },
       )
       .toMatchObject({ surahNumber: 1 });
 
     // And the position must actually move.
     await expect
       .poll(async () => Number(await readStorage(page, "playbackPosition")) || 0, {
-        timeout: 20_000,
+        timeout: AUDIO_TIMEOUT,
       })
       .toBeGreaterThan(0);
   });
@@ -272,6 +294,7 @@ test.describe("popup", () => {
     context,
     extensionId,
   }) => {
+    test.setTimeout(AUDIO_TEST_TIMEOUT);
     const page = await context.newPage();
     await context.route(AYAH_ROUTE, (route) => route.fulfill({ json: AYAH_FIXTURE }));
     await page.goto(`chrome-extension://${extensionId}/popup.html`);
@@ -280,13 +303,14 @@ test.describe("popup", () => {
     await page.getByRole("button", { name: label("play") }).click();
 
     await expect(page.getByRole("button", { name: label("pause") })).toBeVisible({
-      timeout: 20_000,
+      timeout: AUDIO_TIMEOUT,
     });
   });
   test("shows a loading indicator while a recitation is fetched", async ({
     context,
     extensionId,
   }) => {
+    test.setTimeout(AUDIO_TEST_TIMEOUT);
     const page = await context.newPage();
     await context.route(AYAH_ROUTE, (route) => route.fulfill({ json: AYAH_FIXTURE }));
     await page.goto(`chrome-extension://${extensionId}/popup.html`);
@@ -298,11 +322,11 @@ test.describe("popup", () => {
 
     // The spinner is announced to assistive tech, so find it by its role.
     const spinner = page.getByRole("status", { name: label("loadingAudio") });
-    await expect(spinner.first()).toBeVisible({ timeout: 10_000 });
+    await expect(spinner.first()).toBeVisible({ timeout: AUDIO_TIMEOUT });
 
     // ...and it must go away once playback actually starts.
     await expect(page.getByRole("button", { name: label("pause") })).toBeVisible({
-      timeout: 20_000,
+      timeout: AUDIO_TIMEOUT,
     });
     await expect(spinner).toHaveCount(0);
   });
@@ -337,7 +361,7 @@ test.describe("popup", () => {
     context,
     extensionId,
   }) => {
-    test.setTimeout(120_000);
+    test.setTimeout(AUDIO_TEST_TIMEOUT);
     const page = await context.newPage();
     await context.route(AYAH_ROUTE, (route) => route.fulfill({ json: AYAH_FIXTURE }));
     await page.goto(`chrome-extension://${extensionId}/popup.html`);
@@ -353,8 +377,8 @@ test.describe("popup", () => {
         ?.surahNumber;
     const duration = async () => Number(await readStorage(page, "audioDuration")) || 0;
 
-    await expect.poll(nowPlayingNumber, { timeout: 30_000 }).toBe(113);
-    await expect.poll(duration, { timeout: 30_000 }).toBeGreaterThan(0);
+    await expect.poll(nowPlayingNumber, { timeout: AUDIO_TIMEOUT }).toBe(113);
+    await expect.poll(duration, { timeout: AUDIO_TIMEOUT }).toBeGreaterThan(0);
 
     // Skip to just before the end and let playback finish on its own.
     await page.evaluate(
@@ -368,16 +392,16 @@ test.describe("popup", () => {
     );
 
     // The background must queue An-Nas on its own...
-    await expect.poll(nowPlayingNumber, { timeout: 60_000 }).toBe(114);
+    await expect.poll(nowPlayingNumber, { timeout: AUDIO_TIMEOUT }).toBe(114);
 
     // ...and actually play it. Asserting only that `nowPlaying` moved would
     // pass even if the next surah were queued but silent.
     await expect(page.getByRole("button", { name: label("pause") })).toBeVisible({
-      timeout: 30_000,
+      timeout: AUDIO_TIMEOUT,
     });
     await expect
       .poll(async () => Number(await readStorage(page, "playbackPosition")) || 0, {
-        timeout: 30_000,
+        timeout: AUDIO_TIMEOUT,
       })
       .toBeGreaterThan(0.5);
   });
@@ -386,7 +410,7 @@ test.describe("popup", () => {
     context,
     extensionId,
   }) => {
-    test.setTimeout(120_000);
+    test.setTimeout(AUDIO_TEST_TIMEOUT);
     const page = await context.newPage();
     await context.route(AYAH_ROUTE, (route) => route.fulfill({ json: AYAH_FIXTURE }));
     await page.goto(`chrome-extension://${extensionId}/popup.html`);
@@ -399,8 +423,8 @@ test.describe("popup", () => {
         ?.surahNumber;
     const duration = async () => Number(await readStorage(page, "audioDuration")) || 0;
 
-    await expect.poll(nowPlayingNumber, { timeout: 30_000 }).toBe(113);
-    await expect.poll(duration, { timeout: 30_000 }).toBeGreaterThan(0);
+    await expect.poll(nowPlayingNumber, { timeout: AUDIO_TIMEOUT }).toBe(113);
+    await expect.poll(duration, { timeout: AUDIO_TIMEOUT }).toBeGreaterThan(0);
 
     await page.evaluate(
       (target) => {
@@ -414,7 +438,7 @@ test.describe("popup", () => {
 
     // It must reach the end and stay put.
     await expect(page.getByRole("button", { name: label("play") })).toBeVisible({
-      timeout: 60_000,
+      timeout: AUDIO_TIMEOUT,
     });
     expect(await nowPlayingNumber()).toBe(113);
   });
@@ -440,5 +464,99 @@ test.describe("popup", () => {
       "href",
       /islamic\.network/,
     );
+  });
+
+  test("defaults to Bengali and switches to English on demand", async ({
+    context,
+    extensionId,
+  }) => {
+    const page = await context.newPage();
+    await context.route(AYAH_ROUTE, (route) => route.fulfill({ json: AYAH_FIXTURE }));
+    await context.route(EN_ROUTE, (route) => route.fulfill({ json: EN_FIXTURE }));
+    await page.goto(`chrome-extension://${extensionId}/popup.html`);
+
+    const bn = page.getByRole("radio", { name: "BN" });
+    const en = page.getByRole("radio", { name: "EN" });
+    const enLabel = page.locator("label").filter({ hasText: /^EN$/ });
+    const bnLabel = page.locator("label").filter({ hasText: /^BN$/ });
+
+    // Bengali by default, showing the original source's translation.
+    await expect(bn).toBeChecked();
+    await expect(page.getByText(AYAH_FIXTURE.data.ayatMean)).toBeVisible();
+
+    await enLabel.click();
+
+    await expect(en).toBeChecked();
+    await expect(page.getByText(EN_FIXTURE.data.text)).toBeVisible();
+    // The English surah name and Western digits replace the Bengali ones.
+    await expect(page.getByText("An-Nisaa", { exact: true })).toBeVisible();
+    await expect(page.getByText("Ayah 25")).toBeVisible();
+
+    // The verse itself must not change -- only the translation.
+    await expect(page.getByText(AYAH_FIXTURE.data.fullAyat)).toBeVisible();
+
+    await bnLabel.click();
+    await expect(page.getByText(AYAH_FIXTURE.data.ayatMean)).toBeVisible();
+  });
+
+  test("the chosen language survives a popup reopen", async ({
+    context,
+    extensionId,
+  }) => {
+    const page = await context.newPage();
+    await context.route(AYAH_ROUTE, (route) => route.fulfill({ json: AYAH_FIXTURE }));
+    await context.route(EN_ROUTE, (route) => route.fulfill({ json: EN_FIXTURE }));
+    await page.goto(`chrome-extension://${extensionId}/popup.html`);
+
+    await page.locator("label").filter({ hasText: /^EN$/ }).click();
+    await expect.poll(async () => readStorage(page, "translationLanguage")).toBe("en");
+
+    await page.reload();
+    await expect(page.getByRole("radio", { name: "EN" })).toBeChecked();
+    await expect(page.getByText(EN_FIXTURE.data.text)).toBeVisible();
+  });
+
+  test("English falls back to a message when the translation service fails", async ({
+    context,
+    extensionId,
+  }) => {
+    const page = await context.newPage();
+    await context.route(AYAH_ROUTE, (route) => route.fulfill({ json: AYAH_FIXTURE }));
+    await context.route(EN_ROUTE, (route) => route.abort("failed"));
+    await page.goto(`chrome-extension://${extensionId}/popup.html`);
+
+    await page.locator("label").filter({ hasText: /^EN$/ }).click();
+
+    await expect(page.getByText(label("translationUnavailable"))).toBeVisible({
+      timeout: 15_000,
+    });
+    // The Arabic and the reload control stay usable.
+    await expect(page.getByText(AYAH_FIXTURE.data.fullAyat)).toBeVisible();
+  });
+
+  test("English is cached, so a reopen renders it without refetching", async ({
+    context,
+    extensionId,
+  }) => {
+    const page = await context.newPage();
+    await context.route(AYAH_ROUTE, (route) => route.fulfill({ json: AYAH_FIXTURE }));
+
+    let enRequests = 0;
+    await context.route(EN_ROUTE, (route) => {
+      enRequests += 1;
+      return route.fulfill({ json: EN_FIXTURE });
+    });
+    await page.goto(`chrome-extension://${extensionId}/popup.html`);
+
+    await page.locator("label").filter({ hasText: /^EN$/ }).click();
+    await expect(page.getByText(EN_FIXTURE.data.text)).toBeVisible();
+    expect(enRequests).toBe(1);
+
+    // Now the service is gone; the cached translation must still render.
+    await context.unroute(EN_ROUTE);
+    await context.route(EN_ROUTE, (route) => route.abort("failed"));
+
+    await page.reload();
+    await expect(page.getByText(EN_FIXTURE.data.text)).toBeVisible();
   });
 });

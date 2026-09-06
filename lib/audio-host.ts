@@ -43,7 +43,12 @@ export class AudioHost {
     const duration = Number.isFinite(this.#audio.duration) ? this.#audio.duration : 0;
     return {
       status: this.#status,
-      position: Number.isFinite(this.#audio.currentTime) ? this.#audio.currentTime : 0,
+      // An ended track reports 0 rather than its final timestamp, so the popup
+      // shows a rewound timeline and the saved resume position is the start.
+      position:
+        this.#status === "ended" || !Number.isFinite(this.#audio.currentTime)
+          ? 0
+          : this.#audio.currentTime,
       duration,
       surahNumber: this.#surahNumber,
       ...(this.#errorMessage === undefined ? {} : { message: this.#errorMessage }),
@@ -51,6 +56,20 @@ export class AudioHost {
   }
 
   async play(command: PlayCommand): Promise<void> {
+    try {
+      await this.#startPlayback(command);
+    } catch (cause) {
+      // Anything thrown between here and `audio.play()` -- a MediaMetadata
+      // constructor that does not exist, a rejected src assignment -- used to
+      // abort silently, leaving the UI stuck on "loading" forever.
+      this.#status = "error";
+      this.#errorMessage =
+        cause instanceof Error ? cause.message : "Playback could not start.";
+      this.#emit();
+    }
+  }
+
+  async #startPlayback(command: PlayCommand): Promise<void> {
     const audio = this.#audio;
     this.#errorMessage = undefined;
     this.#surahNumber = command.surahNumber;
@@ -74,14 +93,7 @@ export class AudioHost {
     this.#setMediaMetadata(command.name);
     this.#applyPendingSeek();
 
-    try {
-      await audio.play();
-    } catch (cause) {
-      this.#status = "error";
-      this.#errorMessage =
-        cause instanceof Error ? cause.message : "Playback could not start.";
-      this.#emit();
-    }
+    await audio.play();
   }
 
   pause(): void {
@@ -151,7 +163,11 @@ export class AudioHost {
 
     audio.addEventListener("ended", () => {
       this.#status = "ended";
-      this.#seekTo(0);
+      // Deliberately no seek here. Rewinding the element at the moment playback
+      // ends races the very next thing that happens under continuous play --
+      // `src` being replaced and `load()` called for the following surah --
+      // and leaves the element wedged with no `loadedmetadata` and no error.
+      // `state` reports position 0 for an ended track instead.
       this.#emit();
     });
 

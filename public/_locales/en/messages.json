@@ -8,6 +8,12 @@
   "ayatLabel": {
     "message": "Ayah"
   },
+  "translationLanguage": {
+    "message": "Translation language"
+  },
+  "translationUnavailable": {
+    "message": "Could not load the English translation."
+  },
   "readMore": {
     "message": "Read more..."
   },

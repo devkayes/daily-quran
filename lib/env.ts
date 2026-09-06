@@ -22,6 +22,11 @@ const dailyAyatPath = required(
 export const env = {
   /** Endpoint returning one ayah with its Bengali translation. */
   dailyAyatUrl: new URL(dailyAyatPath, apiBaseUrl).toString(),
+  /** English translation lookup, by `surah:ayah` reference. */
+  englishApiBaseUrl: (
+    import.meta.env.WXT_EN_API_BASE_URL ?? "https://api.alquran.cloud/v1"
+  ).replace(/\/$/, ""),
+  englishEdition: import.meta.env.WXT_EN_EDITION ?? "en.sahih",
   /** Root of the surah recitation CDN. */
   audioBaseUrl: required(
     import.meta.env.WXT_AUDIO_BASE_URL,

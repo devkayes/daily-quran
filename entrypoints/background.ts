@@ -84,9 +84,11 @@ export default defineBackground({
       syncPlayPauseLabel(state);
 
       if (state.status === "ended") {
-        void advance(state).catch(() => {
-          // Failing to queue the next surah leaves playback stopped, which is
-          // the same place it would have been without the setting.
+        void advance(state).catch((error: unknown) => {
+          // Leaves playback stopped, which is where it would have been without
+          // the setting -- but log it: a silent catch here hid a real bug for
+          // a long time.
+          console.warn("Daily Quran: could not queue the next surah.", error);
         });
       }
     }
