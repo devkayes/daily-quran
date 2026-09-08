@@ -36,3 +36,26 @@ export function orderByFavorites(
     ...surahs.filter((surah) => !favorites.has(surah.number)),
   ];
 }
+
+/**
+ * The surah `delta` steps away from `current` in the reader's own ordering —
+ * starred surahs first — not by mushaf number. Continuous playback and the
+ * page context menu's next/previous both step through this order, so a
+ * favourite surah is followed by whatever comes after it on screen rather
+ * than by its own number plus one.
+ *
+ * Undefined past either end: continuous playback stops there instead of
+ * wrapping, matching what it already did before favourites existed.
+ */
+export function stepSurah(
+  surahs: readonly Surah[],
+  favorites: ReadonlySet<number>,
+  current: number,
+  delta: number,
+): Surah | undefined {
+  const ordered = orderByFavorites(surahs, favorites);
+  const index = ordered.findIndex((surah) => surah.number === current);
+  if (index === -1) return undefined;
+
+  return ordered[index + delta];
+}

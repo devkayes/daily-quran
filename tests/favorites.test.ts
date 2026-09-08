@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { orderByFavorites, toggleFavorite } from "@/lib/favorites";
+import { orderByFavorites, stepSurah, toggleFavorite } from "@/lib/favorites";
 import { SURAHS } from "@/lib/surahs";
 
 describe("toggleFavorite", () => {
@@ -48,5 +48,52 @@ describe("orderByFavorites", () => {
   it("ignores numbers that match no surah", () => {
     const ordered = orderByFavorites(SURAHS, new Set([0, 115]));
     expect(ordered.map((s) => s.number)).toEqual(SURAHS.map((s) => s.number));
+  });
+});
+
+describe("stepSurah", () => {
+  it("without favourites, steps by mushaf number, same as before", () => {
+    expect(stepSurah(SURAHS, new Set(), 1, 1)?.number).toBe(2);
+    expect(stepSurah(SURAHS, new Set(), 55, -1)?.number).toBe(54);
+  });
+
+  it("stops instead of wrapping past either end when nothing is starred", () => {
+    expect(stepSurah(SURAHS, new Set(), 114, 1)).toBeUndefined();
+    expect(stepSurah(SURAHS, new Set(), 1, -1)).toBeUndefined();
+  });
+
+  it("a lone favourite is followed by the first non-favourite, not by its own number plus one", () => {
+    // The reported bug: surah 10 starred alone should be followed by 1, the
+    // next surah in the reordered list -- not 11.
+    expect(stepSurah(SURAHS, new Set([10]), 10, 1)?.number).toBe(1);
+  });
+
+  it("walks through every favourite, in mushaf order, before the rest", () => {
+    const favorites = new Set([36, 2, 55]);
+
+    // 2, 36, 55 is the order starred surahs appear in the list.
+    expect(stepSurah(SURAHS, favorites, 2, 1)?.number).toBe(36);
+    expect(stepSurah(SURAHS, favorites, 36, 1)?.number).toBe(55);
+    // After the last favourite, the list continues with the first
+    // non-favourite in mushaf order -- surah 1, not 56.
+    expect(stepSurah(SURAHS, favorites, 55, 1)?.number).toBe(1);
+    expect(stepSurah(SURAHS, favorites, 1, 1)?.number).toBe(3);
+  });
+
+  it("stepping backward from a favourite returns to the previous favourite", () => {
+    const favorites = new Set([36, 2]);
+    expect(stepSurah(SURAHS, favorites, 36, -1)?.number).toBe(2);
+    expect(stepSurah(SURAHS, favorites, 2, -1)).toBeUndefined();
+  });
+
+  it("when the last surah is favourited, the order -- and where it stops -- shifts with it", () => {
+    const ordered = stepSurah(SURAHS, new Set([114]), 113, 1);
+    // 114 now sits at the front of the list, so 113 is the new last surah.
+    expect(ordered).toBeUndefined();
+  });
+
+  it("returns undefined for a surah number that is not in the list", () => {
+    expect(stepSurah(SURAHS, new Set(), 0, 1)).toBeUndefined();
+    expect(stepSurah(SURAHS, new Set(), 115, 1)).toBeUndefined();
   });
 });

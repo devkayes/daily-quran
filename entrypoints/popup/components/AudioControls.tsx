@@ -1,10 +1,12 @@
-import { formatDuration } from "@/lib/format";
+import { formatDurationIn } from "@/lib/format";
 import { t } from "@/lib/i18n";
 import type { PlaybackState } from "@/lib/messaging";
+import type { TranslationLanguage } from "@/lib/storage";
 
 interface Props {
   playback: PlaybackState;
   volume: number;
+  language: TranslationLanguage;
   continuous: boolean;
   onToggleContinuous: (next: boolean) => void;
   onPlay: () => void;
@@ -55,6 +57,7 @@ function RepeatIcon() {
 export function AudioControls({
   playback,
   volume,
+  language,
   continuous,
   onToggleContinuous,
   onPlay,
@@ -111,9 +114,9 @@ export function AudioControls({
           disabled={duration === 0}
         />
         <div className="ml-[5px] flex gap-[5px] text-sm tabular-nums">
-          <span>{formatDuration(playback.position)}</span>
+          <span>{formatDurationIn(playback.position, language)}</span>
           <span>/</span>
-          <span>{formatDuration(duration)}</span>
+          <span>{formatDurationIn(duration, language)}</span>
         </div>
       </div>
 

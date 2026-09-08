@@ -414,6 +414,51 @@ test.describe("popup", () => {
       .toBeGreaterThan(0.5);
   });
 
+  /**
+   * The reported bug: a starred surah is not followed by its own number plus
+   * one, but by whatever the reordered list shows next. Al-Kawthar (108) is
+   * the Quran's shortest surah, so starring it alone and letting it finish
+   * stays well inside the audio timeout.
+   */
+  test("continuous playback follows the favourites order, not the surah number", async ({
+    context,
+    extensionId,
+  }) => {
+    test.setTimeout(AUDIO_TEST_TIMEOUT);
+    const page = await context.newPage();
+    await context.route(AYAH_ROUTE, (route) => route.fulfill({ json: AYAH_FIXTURE }));
+    await page.goto(`chrome-extension://${extensionId}/popup.html`);
+
+    await continuousButton(page).click();
+    await page.locator("#favorite108").click();
+
+    // Starred, Al-Kawthar now leads the list.
+    await expect(surahButtons(page).first()).toHaveAttribute("id", "surah108");
+    await surahButtons(page).first().click();
+
+    const nowPlayingNumber = async () =>
+      ((await readStorage(page, "nowPlaying")) as { surahNumber?: number } | null)
+        ?.surahNumber;
+    const duration = async () => Number(await readStorage(page, "audioDuration")) || 0;
+
+    await expect.poll(nowPlayingNumber, { timeout: AUDIO_TIMEOUT }).toBe(108);
+    await expect.poll(duration, { timeout: AUDIO_TIMEOUT }).toBeGreaterThan(0);
+
+    // Skip to just before the end and let playback finish on its own --
+    // "ended" is what actually drives `advance()` in the background.
+    await page.evaluate(
+      (target) => {
+        const slider = document.querySelector<HTMLInputElement>('input[type="range"]');
+        if (!slider) return;
+        slider.value = String(target);
+        slider.dispatchEvent(new Event("input", { bubbles: true }));
+      },
+      Math.max(0, (await duration()) - 2),
+    );
+
+    await expect.poll(nowPlayingNumber, { timeout: AUDIO_TIMEOUT }).toBe(1);
+  });
+
   test("with continuous off, playback stops at the end", async ({
     context,
     extensionId,

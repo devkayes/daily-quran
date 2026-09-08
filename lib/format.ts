@@ -1,3 +1,5 @@
+import type { TranslationLanguage } from "@/lib/storage";
+
 const BENGALI_DIGITS = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"] as const;
 
 /**
@@ -32,4 +34,12 @@ export function formatSeconds(totalSeconds: number): string {
 /** Duration formatted for display, in Bengali numerals. */
 export function formatDuration(totalSeconds: number): string {
   return toBengaliDigits(formatSeconds(totalSeconds));
+}
+
+/** Duration formatted for display, in whichever language the reader picked. */
+export function formatDurationIn(
+  totalSeconds: number,
+  language: TranslationLanguage,
+): string {
+  return language === "en" ? formatSeconds(totalSeconds) : formatDuration(totalSeconds);
 }

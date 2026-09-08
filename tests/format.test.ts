@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { formatDuration, formatSeconds, toBengaliDigits } from "@/lib/format";
+import {
+  formatDuration,
+  formatDurationIn,
+  formatSeconds,
+  toBengaliDigits,
+} from "@/lib/format";
 
 describe("toBengaliDigits", () => {
   it("maps every Western digit to its Bengali numeral", () => {
@@ -47,5 +52,15 @@ describe("formatSeconds", () => {
 describe("formatDuration", () => {
   it("formats and localises in one step", () => {
     expect(formatDuration(90)).toBe("০১:৩০");
+  });
+});
+
+describe("formatDurationIn", () => {
+  it("uses Bengali numerals for bn", () => {
+    expect(formatDurationIn(90, "bn")).toBe("০১:৩০");
+  });
+
+  it("uses Western numerals for en, regardless of what formatDuration would do", () => {
+    expect(formatDurationIn(90, "en")).toBe("01:30");
   });
 });

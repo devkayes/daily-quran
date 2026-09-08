@@ -7,15 +7,17 @@ import {
   syncContinuousChecked,
   syncPlayPauseLabel,
 } from "@/lib/context-menu";
+import { stepSurah } from "@/lib/favorites";
 import { broadcastQuietly, onMessage, type PlaybackState } from "@/lib/messaging";
 import {
   audioDurationItem,
   continuousPlaybackItem,
+  favoriteSurahsItem,
   nowPlayingItem,
   playbackPositionItem,
   volumeItem,
 } from "@/lib/storage";
-import { FIRST_SURAH, findSurah, type Surah } from "@/lib/surahs";
+import { FIRST_SURAH, findSurah, SURAHS, type Surah } from "@/lib/surahs";
 
 /** How often playback position is written while audio is running. */
 const POSITION_PERSIST_INTERVAL_MS = 1000;
@@ -62,14 +64,18 @@ export default defineBackground({
 
     /**
      * Continuous playback. Runs on "ended" only, so it cannot loop: the next
-     * surah has to finish before this fires again. Stops after An-Nas rather
-     * than wrapping back to Al-Fatiha.
+     * surah has to finish before this fires again. Follows the reader's own
+     * order — starred surahs first, same as the popup's list — so a favourite
+     * is followed by whatever the list shows after it, not by its number plus
+     * one. Stops at the end of that order rather than wrapping back to the
+     * start.
      */
     async function advance(state: PlaybackState): Promise<void> {
       if (state.surahNumber === null) return;
       if (!(await continuousPlaybackItem.getValue())) return;
 
-      const next = findSurah(state.surahNumber + 1);
+      const favorites = new Set(await favoriteSurahsItem.getValue());
+      const next = stepSurah(SURAHS, favorites, state.surahNumber, 1);
       if (!next) return;
 
       await start(next);
@@ -163,7 +169,8 @@ export default defineBackground({
       async step(delta) {
         const last = await nowPlayingItem.getValue();
         const current = last?.surahNumber ?? FIRST_SURAH.number;
-        const next = findSurah(current + delta);
+        const favorites = new Set(await favoriteSurahsItem.getValue());
+        const next = stepSurah(SURAHS, favorites, current, delta);
         if (!next) return;
         await start(next);
       },

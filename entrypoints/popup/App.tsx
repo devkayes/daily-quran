@@ -82,6 +82,7 @@ export function App() {
       <AudioControls
         playback={playback}
         volume={volume}
+        language={language}
         onPlay={() => void play().catch(() => {})}
         onPause={() => void sendMessage("pause", undefined).catch(() => {})}
         onRestart={() => void sendMessage("restart", undefined).catch(() => {})}
