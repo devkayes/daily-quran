@@ -16,13 +16,13 @@ const { SURAHS } = await import("@/lib/surahs");
 
 describe("audioUrlFor", () => {
   it("builds {base}/{bitrate}/{reciter}/{number}.mp3", () => {
-    expect(audioUrlFor({ number: 1, name: "x" })).toBe(
+    expect(audioUrlFor({ number: 1 })).toBe(
       "https://cdn.example.test/quran/audio-surah/128/ar.alafasy/1.mp3",
     );
   });
 
   it("addresses the last surah by number, not a stored path", () => {
-    expect(audioUrlFor({ number: 114, name: "x" })).toBe(
+    expect(audioUrlFor({ number: 114 })).toBe(
       "https://cdn.example.test/quran/audio-surah/128/ar.alafasy/114.mp3",
     );
   });

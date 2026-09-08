@@ -1,14 +1,18 @@
 import { toBengaliDigits } from "@/lib/format";
 import { t } from "@/lib/i18n";
-import { SURAHS, type Surah } from "@/lib/surahs";
+import type { TranslationLanguage } from "@/lib/storage";
+import { SURAHS, type Surah, surahNameIn } from "@/lib/surahs";
 
 interface Props {
   activeSurahNumber: number | null;
   isLoading: boolean;
+  language: TranslationLanguage;
   onSelect: (surah: Surah) => void;
 }
 
-export function SurahList({ activeSurahNumber, isLoading, onSelect }: Props) {
+export function SurahList({ activeSurahNumber, isLoading, language, onSelect }: Props) {
+  const isEnglish = language === "en";
+
   return (
     <div
       className="flex max-w-full overflow-x-auto whitespace-nowrap"
@@ -41,7 +45,7 @@ export function SurahList({ activeSurahNumber, isLoading, onSelect }: Props) {
                 aria-label={t("loadingAudio")}
               />
             ) : null}
-            {`${toBengaliDigits(surah.number)}. ${surah.name}`}
+            {`${isEnglish ? surah.number : toBengaliDigits(surah.number)}. ${surahNameIn(surah, language)}`}
           </button>
         );
       })}

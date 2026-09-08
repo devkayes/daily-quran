@@ -527,8 +527,14 @@ test.describe("popup", () => {
     // The verse itself must not change -- only the translation.
     await expect(page.getByText(AYAH_FIXTURE.data.fullAyat)).toBeVisible();
 
+    // The surah list follows the same choice, so a reader who cannot read
+    // Bengali can pick a surah as well as read the ayah.
+    const surahList = page.getByRole("toolbar", { name: label("surahListLabel") });
+    await expect(surahList.getByRole("button").first()).toHaveText("1. Al-Faatiha");
+
     await bnLabel.click();
     await expect(page.getByText(AYAH_FIXTURE.data.ayatMean)).toBeVisible();
+    await expect(surahList.getByRole("button").first()).toHaveText("১. সূরা আল ফাতিহা");
   });
 
   test("the chosen language survives a popup reopen", async ({

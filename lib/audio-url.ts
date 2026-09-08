@@ -9,6 +9,6 @@ import type { Surah } from "@/lib/surahs";
  * store — the number is the whole address. The CDN serves range requests, so
  * seeking works on the long surahs.
  */
-export function audioUrlFor(surah: Surah): string {
+export function audioUrlFor(surah: Pick<Surah, "number">): string {
   return `${env.audioBaseUrl}/${env.audioBitrate}/${env.audioReciter}/${surah.number}.mp3`;
 }

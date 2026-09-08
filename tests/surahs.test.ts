@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { FIRST_SURAH, findSurah, SURAHS } from "@/lib/surahs";
+import { FIRST_SURAH, findSurah, SURAHS, surahNameIn } from "@/lib/surahs";
 
 describe("SURAHS", () => {
   it("contains all 114 surahs", () => {
@@ -18,6 +18,24 @@ describe("SURAHS", () => {
 
   it("has no duplicate names", () => {
     expect(new Set(SURAHS.map((s) => s.name)).size).toBe(114);
+  });
+
+  it("gives every surah a non-empty English name", () => {
+    expect(SURAHS.every((s) => s.englishName.trim().length > 0)).toBe(true);
+  });
+
+  it("has no duplicate English names", () => {
+    expect(new Set(SURAHS.map((s) => s.englishName)).size).toBe(114);
+  });
+});
+
+describe("surahNameIn", () => {
+  it("picks the name for the selected translation language", () => {
+    const fatiha = SURAHS[0];
+    if (!fatiha) throw new Error("SURAHS is empty.");
+
+    expect(surahNameIn(fatiha, "bn")).toBe("সূরা আল ফাতিহা");
+    expect(surahNameIn(fatiha, "en")).toBe("Al-Faatiha");
   });
 });
 

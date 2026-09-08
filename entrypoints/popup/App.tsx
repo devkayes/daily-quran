@@ -43,7 +43,7 @@ export function App() {
     const resuming = await nowPlayingItem.getValue();
     if (resuming) {
       await sendMessage("play", {
-        url: audioUrlFor({ number: resuming.surahNumber, name: resuming.name }),
+        url: audioUrlFor({ number: resuming.surahNumber }),
         surahNumber: resuming.surahNumber,
         name: resuming.name,
         volume,
@@ -98,6 +98,7 @@ export function App() {
       <SurahList
         activeSurahNumber={playback.surahNumber}
         isLoading={playback.status === "loading"}
+        language={language}
         onSelect={(surah) => void play(surah)}
       />
 
