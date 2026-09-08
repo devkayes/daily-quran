@@ -73,6 +73,17 @@ export const cachedAyahItem = storage.defineItem<CachedAyah | null>(
 );
 
 /**
+ * Surah numbers the reader has starred. Position in this array carries no
+ * meaning: starred surahs keep their mushaf order in the list, so it is only
+ * ever used as a set. Stored as an array because `chrome.storage` serialises
+ * to JSON, which has no Set.
+ */
+export const favoriteSurahsItem = storage.defineItem<readonly number[]>(
+  "local:favoriteSurahs",
+  { fallback: [], version: 1 },
+);
+
+/**
  * When on, finishing a surah starts the next one. Read by the background when
  * the audio host reports "ended".
  */

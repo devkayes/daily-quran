@@ -53,6 +53,24 @@
   "surahListLabel": {
     "message": "সূরার তালিকা"
   },
+  "addFavorite": {
+    "message": "$SURAH$ প্রিয় তালিকায় যোগ করুন",
+    "placeholders": {
+      "surah": {
+        "content": "$1",
+        "example": "সূরা আল ফাতিহা"
+      }
+    }
+  },
+  "removeFavorite": {
+    "message": "$SURAH$ প্রিয় তালিকা থেকে সরান",
+    "placeholders": {
+      "surah": {
+        "content": "$1",
+        "example": "সূরা আল ফাতিহা"
+      }
+    }
+  },
   "continuous": {
     "message": "একটানা"
   },

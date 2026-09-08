@@ -24,6 +24,8 @@ export const MESSAGE_KEYS = [
   "loadingAyah",
   "loadingAudio",
   "surahListLabel",
+  "addFavorite",
+  "removeFavorite",
   "continuous",
   "nextSurah",
   "previousSurah",
@@ -37,8 +39,8 @@ export const MESSAGE_KEYS = [
 
 export type MessageKey = (typeof MESSAGE_KEYS)[number];
 
-export function t(key: MessageKey): string {
+export function t(key: MessageKey, substitutions?: string | string[]): string {
   // Falling back to the key keeps a missing translation visible instead of
   // rendering an empty element.
-  return browser.i18n.getMessage(key) || key;
+  return browser.i18n.getMessage(key, substitutions) || key;
 }

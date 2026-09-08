@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { type EnglishAyah, fetchDailyAyah, fetchEnglishAyah } from "@/lib/api";
+import { toggleFavorite } from "@/lib/favorites";
 import {
   IDLE_PLAYBACK_STATE,
   onMessage,
@@ -11,6 +12,7 @@ import {
   type CachedAyah,
   cachedAyahItem,
   continuousPlaybackItem,
+  favoriteSurahsItem,
   type TranslationLanguage,
   translationLanguageItem,
   volumeItem,
@@ -128,6 +130,41 @@ export function useContinuousPlayback(): [boolean, (next: boolean) => void] {
   };
 
   return [enabled, update];
+}
+
+/**
+ * Starred surah numbers, as a set for the list to look up per row. Persisted,
+ * so the stars survive a popup close, a browser restart and a worker teardown.
+ */
+export function useFavoriteSurahs(): [
+  ReadonlySet<number>,
+  (surahNumber: number) => void,
+] {
+  const [favorites, setFavorites] = useState<readonly number[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    void favoriteSurahsItem.getValue().then((value) => {
+      if (active) setFavorites(value);
+    });
+
+    // A second popup window writes to the same storage key, so follow it
+    // rather than trusting our own last write.
+    const unwatch = favoriteSurahsItem.watch((value) => setFavorites(value ?? []));
+
+    return () => {
+      active = false;
+      unwatch();
+    };
+  }, []);
+
+  const toggle = (surahNumber: number) => {
+    const next = toggleFavorite(favorites, surahNumber);
+    setFavorites(next);
+    void favoriteSurahsItem.setValue(next).catch(() => {});
+  };
+
+  return [useMemo(() => new Set(favorites), [favorites]), toggle];
 }
 
 /** Which translation to show. Persisted, defaults to Bengali. */

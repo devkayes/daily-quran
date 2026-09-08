@@ -11,6 +11,7 @@ import {
   useContinuousPlayback,
   useDailyAyah,
   useEnglishAyah,
+  useFavoriteSurahs,
   usePlaybackState,
   useTranslationLanguage,
   useVolume,
@@ -22,6 +23,7 @@ export function App() {
   const [volume, setVolume] = useVolume();
   const [continuous, setContinuous] = useContinuousPlayback();
   const [language, setLanguage] = useTranslationLanguage();
+  const [favorites, toggleFavorite] = useFavoriteSurahs();
   const englishQuery = useEnglishAyah(ayahQuery.data, language === "en");
 
   async function play(surah?: Surah): Promise<void> {
@@ -99,6 +101,8 @@ export function App() {
         activeSurahNumber={playback.surahNumber}
         isLoading={playback.status === "loading"}
         language={language}
+        favorites={favorites}
+        onToggleFavorite={toggleFavorite}
         onSelect={(surah) => void play(surah)}
       />
 

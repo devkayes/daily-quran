@@ -34,6 +34,16 @@ const EN_FIXTURE = {
 };
 
 /**
+ * The surah chips, excluding the star button each one carries. Both are
+ * buttons inside the toolbar, so counting every button there would count 228.
+ */
+function surahButtons(page: Page) {
+  return page
+    .getByRole("toolbar", { name: label("surahListLabel") })
+    .locator("button[id^='surah']");
+}
+
+/**
  * Reads one key from the extension's storage from inside the page. `chrome` is
  * not declared in the Node-side test types, so the probe is typed at the point
  * of use rather than with a global declaration.
@@ -76,8 +86,7 @@ test.describe("popup", () => {
     await expect(page.getByRole("slider", { name: label("progress") })).toBeVisible();
     await expect(page.getByRole("slider", { name: label("volume") })).toBeVisible();
 
-    const surahList = page.getByRole("toolbar", { name: label("surahListLabel") });
-    await expect(surahList.getByRole("button")).toHaveCount(114);
+    await expect(surahButtons(page)).toHaveCount(114);
   });
 
   test("read-more links to the ayah's surah, not its ayah number", async ({
@@ -102,9 +111,8 @@ test.describe("popup", () => {
     await context.route(AYAH_ROUTE, (route) => route.fulfill({ json: AYAH_FIXTURE }));
     await page.goto(`chrome-extension://${extensionId}/popup.html`);
 
-    const surahList = page.getByRole("toolbar", { name: label("surahListLabel") });
-    await expect(surahList.getByRole("button")).toHaveCount(114);
-    await expect(surahList.getByRole("button", { disabled: true })).toHaveCount(0);
+    await expect(surahButtons(page)).toHaveCount(114);
+    await expect(surahButtons(page).and(page.locator(":disabled"))).toHaveCount(0);
   });
 
   test("shows an error state and recovers on retry", async ({
@@ -529,12 +537,11 @@ test.describe("popup", () => {
 
     // The surah list follows the same choice, so a reader who cannot read
     // Bengali can pick a surah as well as read the ayah.
-    const surahList = page.getByRole("toolbar", { name: label("surahListLabel") });
-    await expect(surahList.getByRole("button").first()).toHaveText("1. Al-Faatiha");
+    await expect(surahButtons(page).first()).toHaveText("1. Al-Faatiha");
 
     await bnLabel.click();
     await expect(page.getByText(AYAH_FIXTURE.data.ayatMean)).toBeVisible();
-    await expect(surahList.getByRole("button").first()).toHaveText("১. সূরা আল ফাতিহা");
+    await expect(surahButtons(page).first()).toHaveText("১. সূরা আল ফাতিহা");
   });
 
   test("the chosen language survives a popup reopen", async ({
@@ -596,5 +603,64 @@ test.describe("popup", () => {
 
     await page.reload();
     await expect(page.getByText(EN_FIXTURE.data.text)).toBeVisible();
+  });
+
+  test("starring a surah moves it to the front of the same list", async ({
+    context,
+    extensionId,
+  }) => {
+    const page = await context.newPage();
+    await context.route(AYAH_ROUTE, (route) => route.fulfill({ json: AYAH_FIXTURE }));
+    await page.goto(`chrome-extension://${extensionId}/popup.html`);
+
+    await expect(surahButtons(page).first()).toHaveText("১. সূরা আল ফাতিহা");
+
+    await page.locator("#favorite36").click();
+
+    // Ya-Sin leads the list now, still numbered 36 and still in the one list.
+    await expect(surahButtons(page).first()).toHaveText("৩৬. সূরা ইয়াসিন");
+    await expect(surahButtons(page).nth(1)).toHaveText("১. সূরা আল ফাতিহা");
+    await expect(surahButtons(page)).toHaveCount(114);
+
+    // A second star sorts by mushaf number among the favourites, not by when
+    // it was starred: 2 goes ahead of 36 even though it was starred second.
+    await page.locator("#favorite2").click();
+    await expect(surahButtons(page).first()).toHaveText("২. সূরা আল বাকারা");
+    await expect(surahButtons(page).nth(1)).toHaveText("৩৬. সূরা ইয়াসিন");
+    await expect(surahButtons(page).nth(2)).toHaveText("১. সূরা আল ফাতিহা");
+  });
+
+  test("stars persist across a reopen and unstar back to mushaf order", async ({
+    context,
+    extensionId,
+  }) => {
+    const page = await context.newPage();
+    await context.route(AYAH_ROUTE, (route) => route.fulfill({ json: AYAH_FIXTURE }));
+    await page.goto(`chrome-extension://${extensionId}/popup.html`);
+
+    await page.locator("#favorite36").click();
+    await expect.poll(async () => readStorage(page, "favoriteSurahs")).toEqual([36]);
+
+    // Reopening the popup is a fresh render from storage, with no backend.
+    await page.reload();
+    await expect(surahButtons(page).first()).toHaveText("৩৬. সূরা ইয়াসিন");
+    await expect(page.locator("#favorite36")).toHaveAttribute("aria-pressed", "true");
+
+    await page.locator("#favorite36").click();
+    await expect(page.locator("#favorite36")).toHaveAttribute("aria-pressed", "false");
+    await expect(surahButtons(page).first()).toHaveText("১. সূরা আল ফাতিহা");
+    await expect.poll(async () => readStorage(page, "favoriteSurahs")).toEqual([]);
+  });
+
+  test("the star does not start a recitation", async ({ context, extensionId }) => {
+    const page = await context.newPage();
+    await context.route(AYAH_ROUTE, (route) => route.fulfill({ json: AYAH_FIXTURE }));
+    await page.goto(`chrome-extension://${extensionId}/popup.html`);
+
+    await page.locator("#favorite36").click();
+    await expect(surahButtons(page).first()).toHaveText("৩৬. সূরা ইয়াসিন");
+
+    // Starring is not selecting: nothing should have been queued to play.
+    expect(await readStorage(page, "nowPlaying")).toBeFalsy();
   });
 });

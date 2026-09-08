@@ -53,6 +53,24 @@
   "surahListLabel": {
     "message": "Surah list"
   },
+  "addFavorite": {
+    "message": "Add $SURAH$ to favourites",
+    "placeholders": {
+      "surah": {
+        "content": "$1",
+        "example": "Al-Faatiha"
+      }
+    }
+  },
+  "removeFavorite": {
+    "message": "Remove $SURAH$ from favourites",
+    "placeholders": {
+      "surah": {
+        "content": "$1",
+        "example": "Al-Faatiha"
+      }
+    }
+  },
   "continuous": {
     "message": "Continuous"
   },
