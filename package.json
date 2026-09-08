@@ -3,8 +3,15 @@
   "version": "2.0.0",
   "description": "Access and reflect on Quranic verses anytime, directly from your browser.",
   "author": "its-kayes",
-  "license": "SEE LICENSE IN LICENSE.txt",
+  "license": "GPL-3.0-or-later",
   "homepage": "https://www.kayes.dev/talks/daily-quran",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/devkayes/daily-quran.git"
+  },
+  "bugs": {
+    "url": "https://github.com/devkayes/daily-quran/issues"
+  },
   "private": true,
   "type": "module",
   "scripts": {

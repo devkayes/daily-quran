@@ -11,6 +11,15 @@ All notable changes to this project will be documented in this file.
   name and ayah number switch to English and Western digits too. The choice
   persists, and a fetched translation is cached with the ayah so a reopened
   popup renders it without a request.
+- The **surah list follows the same language choice**: each chip shows the
+  English name (e.g. "Al-Faatiha") and Western numerals in English, matching
+  the spelling AlQuran Cloud already supplies for the ayah header, so a surah
+  reads the same in both places.
+- **Favourite surahs**: a star on each chip pins that surah to the front of
+  the same list — there is no separate favourites list, and no separate
+  numbering. Favourites are ordered by surah number rather than by when they
+  were starred, so starring one surah never reshuffles the others. The choice
+  is stored locally; nothing is sent anywhere.
 - **Audio controls in the page right-click menu**, under a single "Daily Quran"
   entry: play/pause, restart, previous and next surah, and a continuous
   checkbox. The play/pause label follows the actual playback state, and the
@@ -61,6 +70,9 @@ All notable changes to this project will be documented in this file.
 - Dropped the audio host from `host_permissions`. Recitations load through an
   `<audio>` element, which `media-src` covers, so the install prompt no longer
   asks for access to the audio host.
+- Relicensed under the **GNU GPL v3.0** (or, at your option, any later
+  version), replacing the earlier license that forbade redistribution and use
+  outside this project. Ahead of the project's GitHub release.
 
 ## [2.0.0] - 2026-09-05
 
