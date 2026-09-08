@@ -85,10 +85,10 @@ export function SurahList({
               title={t(isFavorite ? "removeFavorite" : "addFavorite", name)}
               onClick={() => toggleFavorite(surah.number)}
               className={[
-                "absolute top-[2px] right-[3px] cursor-pointer rounded px-[2px]",
-                "text-[11px] leading-none",
+                "absolute top-0 right-0 cursor-pointer rounded-full p-[1px] leading-none",
+                "text-sm transition-transform hover:scale-110",
                 "focus-visible:outline-2 focus-visible:outline-olive",
-                isFavorite ? "text-olive" : "text-muted hover:text-olive",
+                isFavorite ? "text-olive" : "text-muted/70 hover:text-olive",
               ].join(" ")}
             >
               {isFavorite ? "★" : "☆"}
