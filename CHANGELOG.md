@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [2.0.0] - 2026-09-11
 ### Added
 - A **BN/EN translation toggle** at the top of the popup, defaulting to
   Bengali. Bengali keeps using the existing source unchanged; English is looked
