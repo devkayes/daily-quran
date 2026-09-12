@@ -78,10 +78,6 @@ export function AyahCard({
         </div>
       </div>
 
-      {/*
-        React escapes this, so ayah text from either API can never be
-        interpreted as markup.
-      */}
       <p dir="rtl" className="font-arabic my-4 text-[25px] text-olive">
         {ayah?.fullAyat ?? ""}
       </p>

@@ -3,18 +3,14 @@ import { t } from "@/lib/i18n";
 import type { PlaybackState } from "@/lib/messaging";
 
 /**
- * Audio controls in the page's right-click menu, so a recitation can be driven
- * without opening the popup.
- *
- * Menu items live in the browser, not in this worker: they survive service
- * worker restarts and must not be created twice, which is why setup clears
- * before it builds.
+ * Audio controls in the page's right-click menu. Menu items live in the browser,
+ * not this worker: they survive worker restarts and must not be created twice,
+ * which is why setup clears before it builds.
  */
 
 /**
- * Last play/pause label written to the menu. State arrives several times a
- * second during playback, and each `update` is an IPC round trip, so the label
- * is only rewritten when it would actually differ.
+ * Last play/pause label written. State arrives several times a second and each
+ * `update` is an IPC round trip, so only a genuine change is written.
  */
 let lastLabel: string | null = null;
 
@@ -37,8 +33,7 @@ export interface MenuActions {
 
 export async function createContextMenu(continuous: boolean): Promise<void> {
   await browser.contextMenus.removeAll();
-  // The menu is rebuilt with the "play" label, so the cached label below has to
-  // match or the first real state change would be skipped as a no-op.
+  // Must match the label built below, or the first state change looks like a no-op.
   lastLabel = t("play");
 
   browser.contextMenus.create({
@@ -83,8 +78,8 @@ export function syncPlayPauseLabel(state: PlaybackState): void {
   if (label === lastLabel) return;
   lastLabel = label;
 
-  // The menu may not exist yet on a cold worker start, and a browser may fail
-  // synchronously rather than reject, so both paths are swallowed.
+  // The menu may not exist on a cold start, and some browsers throw rather than
+  // reject, so both paths are swallowed.
   updateQuietly(MENU_IDS.playPause, { title: label });
 }
 

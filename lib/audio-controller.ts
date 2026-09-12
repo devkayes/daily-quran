@@ -9,8 +9,8 @@ import {
 
 /**
  * What the background talks to in order to control audio. Chrome and Firefox
- * get different implementations because they can host a DOM audio element in
- * different places, but the background code above this line is identical.
+ * host the DOM audio element in different places; everything above this line
+ * is identical.
  */
 export interface AudioController {
   play(command: PlayCommand): Promise<void>;
@@ -23,10 +23,7 @@ export interface AudioController {
 
 const OFFSCREEN_URL = "offscreen.html";
 
-/**
- * Chrome/Edge: an MV3 service worker has no DOM, so audio lives in an offscreen
- * document that the worker creates on demand.
- */
+/** Chrome/Edge: the MV3 worker has no DOM, so audio lives in an offscreen document. */
 function createOffscreenController(): AudioController {
   let creating: Promise<void> | null = null;
 
@@ -75,10 +72,7 @@ function createOffscreenController(): AudioController {
   };
 }
 
-/**
- * Firefox: MV3 background scripts run in an event page, which has a DOM, so the
- * audio element lives here directly and no offscreen document is involved.
- */
+/** Firefox: the MV3 event page has a DOM, so the audio element lives here directly. */
 function createInPageController(
   onState: (state: PlaybackState) => void,
 ): AudioController {
@@ -104,9 +98,8 @@ function createInPageController(
 }
 
 /**
- * `onState` is only wired up on Firefox, where the host runs in this same
- * context. On Chrome the offscreen document reports state over the
- * `hostStateChanged` message instead, which the background handles.
+ * `onState` is wired up on Firefox only, where the host shares this context. On
+ * Chrome the offscreen document reports over `hostStateChanged` instead.
  */
 export function createAudioController(
   onState: (state: PlaybackState) => void,

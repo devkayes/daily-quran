@@ -10,9 +10,8 @@ const OPTIONS: readonly TranslationLanguage[] = ["bn", "en"];
 const LABELS: Record<TranslationLanguage, string> = { bn: "BN", en: "EN" };
 
 /**
- * Segmented BN/EN control built from real radio inputs, so arrow keys move
- * between the options and screen readers announce one choice of two. The inputs
- * are visually hidden and their labels carry the styling.
+ * Segmented BN/EN control built from real radio inputs, so arrow keys work and
+ * screen readers announce one choice of two. The inputs are visually hidden.
  */
 export function LanguageToggle({ language, onChange }: Props) {
   return (

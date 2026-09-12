@@ -20,11 +20,7 @@ import {
 
 export const AYAH_QUERY_KEY = ["daily-ayah"] as const;
 
-/**
- * Cache-then-revalidate. The popup paints the last ayah from storage
- * immediately and refreshes behind it — what v1 was reaching for by commenting
- * out the fetch on load, but without going stale forever.
- */
+/** Cache-then-revalidate: paint the stored ayah at once, refresh behind it. */
 export function useDailyAyah() {
   const queryClient = useQueryClient();
 
@@ -114,8 +110,7 @@ export function useContinuousPlayback(): [boolean, (next: boolean) => void] {
       if (active) setEnabled(value);
     });
 
-    // The setting can also be changed from the page context menu, so follow
-    // storage rather than trusting our own last write.
+    // Also changed from the context menu, so follow storage, not our last write.
     const unwatch = continuousPlaybackItem.watch((value) => setEnabled(value));
 
     return () => {
@@ -132,10 +127,7 @@ export function useContinuousPlayback(): [boolean, (next: boolean) => void] {
   return [enabled, update];
 }
 
-/**
- * Starred surah numbers, as a set for the list to look up per row. Persisted,
- * so the stars survive a popup close, a browser restart and a worker teardown.
- */
+/** Starred surah numbers, as a set for per-row lookup. Persisted. */
 export function useFavoriteSurahs(): [
   ReadonlySet<number>,
   (surahNumber: number) => void,
@@ -148,8 +140,7 @@ export function useFavoriteSurahs(): [
       if (active) setFavorites(value);
     });
 
-    // A second popup window writes to the same storage key, so follow it
-    // rather than trusting our own last write.
+    // A second popup writes the same key, so follow storage, not our last write.
     const unwatch = favoriteSurahsItem.watch((value) => setFavorites(value ?? []));
 
     return () => {
@@ -195,9 +186,8 @@ export function useTranslationLanguage(): [
 }
 
 /**
- * English text for the ayah the Bengali source already picked. Only runs when
- * English is selected, and the result is written back into the ayah cache so a
- * reopened popup renders instantly and works offline.
+ * English text for the ayah the Bengali source already picked. Runs only when
+ * English is selected; the result is cached so a reopened popup renders at once.
  */
 export function useEnglishAyah(ayah: CachedAyah | undefined, enabled: boolean) {
   return useQuery<EnglishAyah>({

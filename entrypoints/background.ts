@@ -19,7 +19,6 @@ import {
 } from "@/lib/storage";
 import { FIRST_SURAH, findSurah, SURAHS, type Surah } from "@/lib/surahs";
 
-/** How often playback position is written while audio is running. */
 const POSITION_PERSIST_INTERVAL_MS = 1000;
 
 export default defineBackground({
@@ -28,10 +27,9 @@ export default defineBackground({
     let lastPersistedAt = 0;
 
     /**
-     * The single place playback state is persisted. The audio host itself
-     * cannot do this on Chrome — offscreen documents have no `chrome.storage` —
-     * so every state change funnels through here, whether it arrived over a
-     * message (Chrome) or from a host running in this very context (Firefox).
+     * The single place playback state is persisted. The audio host cannot do it
+     * on Chrome — offscreen documents have no `chrome.storage` — so every state
+     * change funnels through here.
      */
     async function persist(state: PlaybackState): Promise<void> {
       if (state.duration > 0) await audioDurationItem.setValue(state.duration);
@@ -44,7 +42,6 @@ export default defineBackground({
       }
     }
 
-    /** Starts a surah from the beginning and records it as now playing. */
     async function start(surah: Surah): Promise<void> {
       const url = audioUrlFor(surah);
       await nowPlayingItem.setValue({
@@ -63,12 +60,9 @@ export default defineBackground({
     }
 
     /**
-     * Continuous playback. Runs on "ended" only, so it cannot loop: the next
-     * surah has to finish before this fires again. Follows the reader's own
-     * order — starred surahs first, same as the popup's list — so a favourite
-     * is followed by whatever the list shows after it, not by its number plus
-     * one. Stops at the end of that order rather than wrapping back to the
-     * start.
+     * Continuous playback. Runs on "ended" only, so it cannot loop. Follows the
+     * reader's own order — starred surahs first, same as the popup's list — and
+     * stops at the end of it rather than wrapping.
      */
     async function advance(state: PlaybackState): Promise<void> {
       if (state.surahNumber === null) return;
@@ -90,19 +84,16 @@ export default defineBackground({
       syncPlayPauseLabel(state);
 
       if (state.status === "ended") {
-        void advance(state).catch((error: unknown) => {
-          // Leaves playback stopped, which is where it would have been without
-          // the setting -- but log it: a silent catch here hid a real bug for
-          // a long time.
-          console.warn("Daily Quran: could not queue the next surah.", error);
+        void advance(state).catch(() => {
+          // Leaves playback stopped, where it would have been without the setting.
         });
       }
     }
 
     const audio = createAudioController(handleState);
 
-    // Chrome: the offscreen document reports here. Firefox: never fires,
-    // because the host calls `handleState` directly.
+    // Chrome: the offscreen document reports here. Firefox: never fires, because
+    // the host calls `handleState` directly.
     onMessage("hostStateChanged", ({ data }) => handleState(data));
 
     onMessage("play", async ({ data }) => {
@@ -131,9 +122,6 @@ export default defineBackground({
 
     onMessage("getPlaybackState", () => audio.getState());
 
-    // ---- page context menu ----
-
-    /** Resumes what was last played, or starts Al-Fatiha. */
     async function resumeOrStart(): Promise<void> {
       const last = await nowPlayingItem.getValue();
       const surah = last ? findSurah(last.surahNumber) : undefined;
@@ -180,7 +168,6 @@ export default defineBackground({
       },
     });
 
-    // Rebuild on install/update, and keep the checkbox in step with the popup.
     browser.runtime.onInstalled.addListener(() => {
       void continuousPlaybackItem.getValue().then(createContextMenu);
     });

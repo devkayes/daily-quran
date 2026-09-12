@@ -16,10 +16,7 @@ function SourceLink({ href, children }: { href: string; children: string }) {
   );
 }
 
-/**
- * Attribution for the things this extension does not own, naming whichever
- * translation is actually on screen alongside the recitation.
- */
+/** Attribution, naming whichever translation is actually on screen. */
 export function Credits({ language }: Props) {
   const isEnglish = language === "en";
 

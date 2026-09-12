@@ -1,18 +1,8 @@
 import { defineExtensionMessaging } from "@webext-core/messaging";
 
-/**
- * The message contract between popup, background and the audio host.
- *
- * v1 passed untyped `{ type, ... }` bags through a stringly-typed `switch`, and
- * used an `offscreen: true` marker so the worker could tell its own relayed
- * traffic apart from the offscreen document's replies. Here every message has a
- * declared payload and return type, and the two legs of the relay have distinct
- * names — so the worker cannot receive a message meant for the audio host, and
- * sender and receiver cannot disagree about a payload.
- */
+/** The typed message contract between popup, background and the audio host. */
 
 export interface PlayCommand {
-  /** Absolute URL of the recitation to play. */
   url: string;
   surahNumber: number;
   name: string;
@@ -42,7 +32,7 @@ export const IDLE_PLAYBACK_STATE: PlaybackState = {
 };
 
 interface ProtocolMap {
-  // ---- popup -> background ----
+  // popup -> background
   play(command: PlayCommand): void;
   pause(): void;
   restart(): void;
@@ -50,7 +40,7 @@ interface ProtocolMap {
   seek(seconds: number): void;
   getPlaybackState(): PlaybackState;
 
-  // ---- background -> audio host (offscreen document on Chrome) ----
+  // background -> audio host (offscreen document on Chrome)
   hostPlay(command: PlayCommand): void;
   hostPause(): void;
   hostRestart(): void;
@@ -58,22 +48,18 @@ interface ProtocolMap {
   hostSeek(seconds: number): void;
   hostGetState(): PlaybackState;
 
-  // ---- audio host -> background ----
-  // Chrome offscreen documents cannot reach chrome.storage, so the host reports
-  // state here and the background is the one that persists it.
+  // audio host -> background. Offscreen documents cannot reach chrome.storage,
+  // so the host reports state and the background persists it.
   hostStateChanged(state: PlaybackState): void;
 
-  // ---- background -> popup ----
+  // background -> popup
   playbackStateChanged(state: PlaybackState): void;
 }
 
 export const { sendMessage, onMessage, removeAllListeners } =
   defineExtensionMessaging<ProtocolMap>();
 
-/**
- * Broadcasts that nobody may be listening to — the popup is usually closed —
- * must not reject. Every "no receiving end" error is expected traffic.
- */
+/** The popup is usually closed, so "no receiving end" is expected traffic. */
 export function broadcastQuietly(state: PlaybackState): void {
   void sendMessage("playbackStateChanged", state).catch(() => {});
 }

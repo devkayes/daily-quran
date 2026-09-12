@@ -1,10 +1,6 @@
 /**
- * The 114 surahs in mushaf order.
- *
- * Every surah has a recitation now that audio comes from the Islamic Network
- * CDN, addressed purely by number. Earlier versions stored a per-surah audio
- * path and had to model "no recitation yet" as a separate case; that
- * distinction is gone, along with the disabled buttons it produced.
+ * The 114 surahs in mushaf order. Every one has a recitation, addressed purely
+ * by number, so there is no per-surah audio path to store.
  */
 
 import type { TranslationLanguage } from "@/lib/storage";
@@ -13,11 +9,7 @@ export interface Surah {
   readonly number: number;
   /** Bengali name, shown while the Bengali translation is selected. */
   readonly name: string;
-  /**
-   * English name, shown while English is selected. Spelled as AlQuran Cloud
-   * spells it, so a surah reads the same in this list and in the ayah header,
-   * which takes its name straight from that API.
-   */
+  /** Spelled as AlQuran Cloud spells it, so the list and ayah header agree. */
   readonly englishName: string;
 }
 

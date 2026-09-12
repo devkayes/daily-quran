@@ -2,13 +2,7 @@ import { z } from "zod";
 import { env } from "@/lib/env";
 import type { CachedAyah } from "@/lib/storage";
 
-/**
- * The ayah API response, parsed at the boundary instead of trusted.
- *
- * This is the structural half of the `innerHTML` fix: unknown shape in, known
- * shape out. If the API changes or a proxy returns something else, we get a
- * typed error instead of writing whatever arrived into the DOM.
- */
+/** Parsed at the boundary, never trusted: unknown shape in, known shape out. */
 const ayahResponseSchema = z.object({
   success: z.boolean(),
   statusCode: z.number(),
@@ -21,10 +15,7 @@ const ayahResponseSchema = z.object({
   }),
 });
 
-/**
- * AlQuran Cloud's per-ayah response. Only the fields actually rendered are
- * declared; the endpoint returns juz, page, sajda and more that we ignore.
- */
+/** AlQuran Cloud's per-ayah response; only the rendered fields are declared. */
 const englishAyahSchema = z.object({
   code: z.number(),
   data: z.object({
@@ -66,7 +57,6 @@ export async function fetchDailyAyah(signal?: AbortSignal): Promise<CachedAyah> 
   return { ...parsed.data.data, fetchedAt: Date.now() };
 }
 
-/** Public site URL for a full surah. */
 export function surahDetailsUrl(surahNumber: number): string {
   return `${env.surahDetailsUrl}/${surahNumber}`;
 }
@@ -77,8 +67,6 @@ export interface EnglishAyah {
 }
 
 /**
- * English translation for one ayah, looked up by `surah:ayah`.
- *
  * The Bengali source stays authoritative for *which* ayah is shown; this only
  * translates the one it picked, so switching language never changes the verse.
  */

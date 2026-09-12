@@ -1,13 +1,9 @@
 import { storage } from "#imports";
 
 /**
- * Every piece of persisted state, in one place, behind one async API.
- *
- * v1 split state between `localStorage` (volume, now-playing, pause position)
- * and `chrome.storage.local` (duration). MV3 service workers have no
- * `localStorage` at all, so half the state was structurally unreachable from
- * the worker. Everything here lives in `chrome.storage`, so every context —
- * popup, background, offscreen — can read and write it.
+ * Every piece of persisted state, behind one async API. All of it lives in
+ * `chrome.storage`: MV3 service workers have no `localStorage`, so state kept
+ * there would be unreachable from the worker.
  */
 
 export interface NowPlaying {
@@ -28,7 +24,6 @@ export interface CachedAyah {
   readonly english?: { readonly text: string; readonly surahName: string };
 }
 
-/** Which translation the ayah is shown in. The Bengali source is unchanged. */
 export type TranslationLanguage = "bn" | "en";
 
 export const DEFAULT_VOLUME = 0.5;
@@ -38,61 +33,50 @@ export const translationLanguageItem = storage.defineItem<TranslationLanguage>(
   { fallback: "bn", version: 1 },
 );
 
-/** 0..1. Persisted so a fresh popup opens at the volume you left. */
+/** 0..1. */
 export const volumeItem = storage.defineItem<number>("local:volume", {
   fallback: DEFAULT_VOLUME,
   version: 1,
 });
 
-/** The surah the audio element is currently pointed at, if any. */
 export const nowPlayingItem = storage.defineItem<NowPlaying | null>(
   "local:nowPlaying",
   { fallback: null, version: 1 },
 );
 
-/** Seconds into the current recitation, so playback resumes where it stopped. */
+/** Seconds into the current recitation. */
 export const playbackPositionItem = storage.defineItem<number>(
   "local:playbackPosition",
   { fallback: 0, version: 1 },
 );
 
-/** Duration of the loaded recitation, in seconds. Drives the timeline max. */
+/** Seconds. Drives the timeline max. */
 export const audioDurationItem = storage.defineItem<number>("local:audioDuration", {
   fallback: 0,
   version: 1,
 });
 
-/**
- * Last successfully fetched ayah. The popup renders this immediately on open
- * and revalidates behind it, which is what commenting out `ayatFetch()` in v1
- * was reaching for.
- */
+/** Rendered immediately on open while a fresh fetch revalidates behind it. */
 export const cachedAyahItem = storage.defineItem<CachedAyah | null>(
   "local:cachedAyah",
   { fallback: null, version: 1 },
 );
 
 /**
- * Surah numbers the reader has starred. Position in this array carries no
- * meaning: starred surahs keep their mushaf order in the list, so it is only
- * ever used as a set. Stored as an array because `chrome.storage` serialises
- * to JSON, which has no Set.
+ * Starred surah numbers. Only ever used as a set — starred surahs keep their
+ * mushaf order in the list, so position here carries no meaning. An array
+ * because `chrome.storage` serialises to JSON, which has no Set.
  */
 export const favoriteSurahsItem = storage.defineItem<readonly number[]>(
   "local:favoriteSurahs",
   { fallback: [], version: 1 },
 );
 
-/**
- * When on, finishing a surah starts the next one. Read by the background when
- * the audio host reports "ended".
- */
 export const continuousPlaybackItem = storage.defineItem<boolean>(
   "local:continuousPlayback",
   { fallback: false, version: 1 },
 );
 
-/** Clears playback state. Used when switching to a different surah. */
 export async function resetPlaybackPosition(): Promise<void> {
   await playbackPositionItem.setValue(0);
 }

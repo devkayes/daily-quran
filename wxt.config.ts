@@ -4,9 +4,8 @@ import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "wxt";
 
 /**
- * Minimal .env reader. wxt.config.ts is evaluated before WXT wires up Vite's
- * env loading, so the manifest (which needs the API origins to build its CSP
- * and host_permissions) reads the files directly.
+ * Minimal .env reader. This file is evaluated before WXT wires up Vite's env
+ * loading, so the manifest reads the files directly to build its CSP.
  */
 function loadEnv(mode: string): Record<string, string> {
   const out: Record<string, string> = {};
@@ -27,7 +26,7 @@ function loadEnv(mode: string): Record<string, string> {
   return { ...out, ...process.env } as Record<string, string>;
 }
 
-/** `https://host/some/path` -> `https://host/*`, the form CSP and permissions want. */
+/** `https://host/some/path` -> `https://host`, the form CSP wants. */
 function originOf(url: string | undefined, fallback: string): string {
   try {
     return new URL(url ?? fallback).origin;
@@ -39,17 +38,14 @@ function originOf(url: string | undefined, fallback: string): string {
 export default defineConfig({
   modules: ["@wxt-dev/module-react"],
   srcDir: ".",
-  // Firefox defaults to MV2 in WXT. Mozilla is retiring MV2, and Firefox MV3
-  // background scripts run in an event page that still has a DOM, which is
-  // exactly what the in-page audio host needs.
+  // WXT defaults Firefox to MV2. Firefox MV3 runs the background in an event page
+  // that still has a DOM, which is what the in-page audio host needs.
   manifestVersion: 3,
   outDir: ".output",
 
   vite: ({ command }) => ({
     plugins: [tailwindcss()],
     build: {
-      // Debug against the original TypeScript. Kept out of production builds so
-      // the store package stays small and does not ship the sources.
       sourcemap: command === "serve" ? "inline" : false,
     },
   }),
@@ -61,8 +57,6 @@ export default defineConfig({
       env.WXT_AUDIO_BASE_URL,
       "https://cdn.islamic.network/quran/audio-surah",
     );
-    // Serves `access-control-allow-origin: *`, so it needs a connect-src entry
-    // but no host permission -- which keeps the install prompt unchanged.
     const englishOrigin = originOf(
       env.WXT_EN_API_BASE_URL,
       "https://api.alquran.cloud/v1",
@@ -70,17 +64,11 @@ export default defineConfig({
 
     const isFirefox = browser === "firefox";
 
-    // `wxt dev` serves modules and the HMR socket from a local Vite server. WXT
-    // adds that origin to script-src itself, but not to connect-src, and this
-    // config sets an explicit connect-src -- so without this the reload socket
-    // is blocked and hot reload silently stops working.
+    // This config sets an explicit connect-src, and WXT does not add the dev
+    // server there — without these the HMR socket is blocked and hot reload
+    // silently stops working. Dev also injects CSS from JS, hence 'unsafe-inline'.
     const isDev = command === "serve";
     const devConnectSrc = isDev ? " http://localhost:* ws://localhost:*" : "";
-
-    // Vite serves CSS in dev by injecting <style> elements from JavaScript
-    // rather than emitting a stylesheet, so dev needs 'unsafe-inline'. The
-    // font is served from the dev server too. Production emits a real .css
-    // file and keeps style-src locked to 'self'.
     const devStyleSrc = isDev ? " 'unsafe-inline' http://localhost:*" : "";
     const devFontSrc = isDev ? " http://localhost:*" : "";
 
@@ -91,16 +79,14 @@ export default defineConfig({
       author: "its-kayes",
       homepage_url: "https://www.kayes.dev/talks/daily-quran",
 
-      // Firefox MV3 uses an event page with DOM access, so it plays audio in
-      // the background directly and never needs the offscreen permission.
+      // Firefox plays audio in its DOM-capable event page, so no offscreen.
       permissions: isFirefox
         ? ["storage", "contextMenus"]
         : ["storage", "offscreen", "contextMenus"],
 
-      // Only the ayah API is fetched. Recitations load through an <audio>
-      // element, which media-src covers -- asking for host access to the CDN
-      // would add an install warning for nothing.
-      host_permissions: [`${apiOrigin}/*`],
+      // No host_permissions on purpose: both APIs return an
+      // `access-control-allow-origin` matching the caller, so plain CORS covers
+      // the fetches. Adding one costs an install warning and an in-depth review.
 
       content_security_policy: {
         extension_pages: [
@@ -131,10 +117,6 @@ export default defineConfig({
             },
           }
         : {}),
-
-      // Not claimed any more: every ayah and every recitation is fetched over
-      // the network. The popup caches the last ayah, but audio needs a
-      // connection, so `offline_enabled` would be a false promise.
     };
   },
 

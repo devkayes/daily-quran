@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.1] - 2026-09-12
+### Removed
+- `host_permissions` entirely. The ayah API answers with an
+  `access-control-allow-origin` matching the caller, so the fetch already
+  satisfies plain CORS and the grant bought nothing. Dropping it clears the
+  "Read and change your data on pro.proggamoyquran.com" warning that disabled
+  the extension on update, and takes the listing out of the in-depth store
+  review that any host permission triggers. The origin stays in the CSP
+  `connect-src`, which is what actually permits the request.
+
 ## [2.0.0] - 2026-09-11
 ### Added
 - A **BN/EN translation toggle** at the top of the popup, defaulting to

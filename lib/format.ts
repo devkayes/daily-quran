@@ -2,10 +2,7 @@ import type { TranslationLanguage } from "@/lib/storage";
 
 const BENGALI_DIGITS = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"] as const;
 
-/**
- * Renders Western digits in a string as Bengali numerals, leaving every other
- * character (separators, colons) untouched.
- */
+/** Western digits to Bengali numerals; every other character is untouched. */
 export function toBengaliDigits(value: string | number): string {
   return String(value).replace(
     /[0-9]/g,

@@ -39,9 +39,8 @@ export function App() {
       return;
     }
 
-    // The play button resumes whatever was loaded last. The URL is rebuilt
-    // from the surah number rather than replayed from storage, so changing
-    // reciter, bitrate or CDN cannot strand anyone on a dead address.
+    // Rebuilt from the surah number rather than replayed from storage, so a
+    // changed reciter, bitrate or CDN cannot strand anyone on a dead address.
     const resuming = await nowPlayingItem.getValue();
     if (resuming) {
       await sendMessage("play", {
@@ -54,8 +53,7 @@ export function App() {
       return;
     }
 
-    // Nothing has ever played. v1 fell back to the first surah here; without
-    // this the play button silently did nothing.
+    // Nothing has ever played; without this the play button does nothing.
     await sendMessage("play", {
       url: audioUrlFor(FIRST_SURAH),
       surahNumber: FIRST_SURAH.number,

@@ -1,11 +1,6 @@
 import type { PlaybackState, PlayCommand } from "@/lib/messaging";
 
-/**
- * `HTMLMediaElement.HAVE_METADATA`, inlined. Reading it off the global would
- * make this guard depend on a constant that is absent in non-browser DOM
- * implementations, where `readyState < undefined` is false and the guard
- * silently stops guarding.
- */
+/** Inlined: the global is absent in non-browser DOMs, where the guard below would silently pass. */
 const HAVE_METADATA = 1;
 
 function clamp01(value: number): number {
@@ -14,15 +9,13 @@ function clamp01(value: number): number {
 }
 
 /**
- * Owns the single `<audio>` element and is the only source of truth for
- * playback. Runs wherever a DOM audio element can live: an offscreen document
- * on Chrome, the background event page on Firefox.
+ * Owns the single `<audio>` element and is the sole source of truth for playback.
+ * Runs wherever a DOM audio element can live: an offscreen document on Chrome, the
+ * background event page on Firefox.
  *
- * It deliberately touches no extension API beyond the DOM. Chrome offscreen
- * documents have access to only a subset of extension APIs — `chrome.storage`
- * is not among them — so persisting from here threw and aborted playback
- * before `audio.play()` was ever reached. State is reported through `onState`
- * and the owner decides what to persist.
+ * Touches no extension API beyond the DOM. Offscreen documents cannot reach
+ * `chrome.storage`, and calling it here threw before `audio.play()` was reached.
+ * State is reported through `onState`; the owner decides what to persist.
  */
 export class AudioHost {
   readonly #audio: HTMLAudioElement;
@@ -43,8 +36,8 @@ export class AudioHost {
     const duration = Number.isFinite(this.#audio.duration) ? this.#audio.duration : 0;
     return {
       status: this.#status,
-      // An ended track reports 0 rather than its final timestamp, so the popup
-      // shows a rewound timeline and the saved resume position is the start.
+      // An ended track reports 0 rather than its final timestamp, so the resume
+      // position saved from here is the start.
       position:
         this.#status === "ended" || !Number.isFinite(this.#audio.currentTime)
           ? 0
@@ -59,9 +52,8 @@ export class AudioHost {
     try {
       await this.#startPlayback(command);
     } catch (cause) {
-      // Anything thrown between here and `audio.play()` -- a MediaMetadata
-      // constructor that does not exist, a rejected src assignment -- used to
-      // abort silently, leaving the UI stuck on "loading" forever.
+      // Without this the UI stuck on "loading" forever whenever anything before
+      // audio.play() threw.
       this.#status = "error";
       this.#errorMessage =
         cause instanceof Error ? cause.message : "Playback could not start.";
@@ -75,10 +67,8 @@ export class AudioHost {
     this.#surahNumber = command.surahNumber;
     audio.volume = clamp01(command.volume);
 
-    // Announced first, before src/load(): load() fires a `pause` event, and the
-    // loading status is exactly what tells the pause handler to ignore it.
-    // Emitting here also lets the popup show a spinner while a long surah
-    // downloads -- Al-Baqarah is over 100 MB.
+    // Must precede src/load(): load() fires `pause`, and the loading status is what
+    // tells the pause handler to ignore it.
     this.#status = "loading";
     this.#emit();
 
@@ -102,15 +92,13 @@ export class AudioHost {
     this.#emit();
   }
 
-  /** Rewind to the start and play from there. */
   async restart(): Promise<void> {
     this.#seekTo(0);
     if (this.#audio.src) {
       try {
         await this.#audio.play();
       } catch {
-        // A restart on a source the browser refuses to start is not fatal;
-        // the state below still reflects position 0.
+        // Not fatal; the emitted state still reflects position 0.
       }
     }
     this.#emit();
@@ -124,8 +112,6 @@ export class AudioHost {
     this.#seekTo(seconds);
     this.#emit();
   }
-
-  // ---------------------------------------------------------------- internals
 
   #attachListeners(): void {
     const audio = this.#audio;
@@ -141,15 +127,12 @@ export class AudioHost {
     });
 
     audio.addEventListener("pause", () => {
-      // `ended` also fires a `pause`; keep the terminal state. `load()` fires
-      // one too, which must not look like the user pausing mid-fetch —
-      // an explicit pause() sets the status itself.
+      // `ended` and `load()` both fire `pause`; neither means the user paused.
       if (this.#status === "ended" || this.#status === "loading") return;
       this.#status = "paused";
       this.#emit();
     });
 
-    // Buffering after playback has already started.
     audio.addEventListener("waiting", () => {
       if (this.#status !== "playing") return;
       this.#status = "loading";
@@ -163,11 +146,9 @@ export class AudioHost {
 
     audio.addEventListener("ended", () => {
       this.#status = "ended";
-      // Deliberately no seek here. Rewinding the element at the moment playback
-      // ends races the very next thing that happens under continuous play --
-      // `src` being replaced and `load()` called for the following surah --
-      // and leaves the element wedged with no `loadedmetadata` and no error.
-      // `state` reports position 0 for an ended track instead.
+      // Deliberately no seek: rewinding here races the `src` swap that continuous
+      // play performs next, wedging the element with no `loadedmetadata` and no
+      // error. `state` reports position 0 for an ended track instead.
       this.#emit();
     });
 
@@ -180,8 +161,7 @@ export class AudioHost {
 
   #applyPendingSeek(): void {
     if (this.#pendingSeek === null) return;
-    // `currentTime` silently does nothing before metadata arrives, which is why
-    // v1 lost the resume position on a cold start.
+    // `currentTime` is a silent no-op before metadata arrives.
     if (this.#audio.readyState < HAVE_METADATA) return;
     this.#seekTo(this.#pendingSeek);
     this.#pendingSeek = null;
@@ -217,7 +197,7 @@ export class AudioHost {
       try {
         navigator.mediaSession.setActionHandler(action, handler);
       } catch {
-        // Not every action is supported on every platform.
+        // Not every action exists on every platform.
       }
     }
   }

@@ -17,22 +17,15 @@ interface Props {
 }
 
 /*
- * v1 sized these icons 15x15 *with* 6px padding under the browser default
- * `content-box`, so the glyph was a full 15px and the button came out ~27px.
- * Tailwind's preflight sets `border-box`, which made that same padding eat the
- * icon down to a 13x3 sliver -- visible as empty circles. The control is sized
- * explicitly now and the icon carries no padding, so neither box model changes
- * the result.
+ * Sized explicitly, with no padding on the icon. Padding plus Tailwind
+ * preflight's `border-box` previously collapsed these to empty circles.
  */
 const CONTROL = "h-[27px] w-[27px] shrink-0";
 const iconClass = "block h-[15px] w-[15px]";
 const controlClass = `${CONTROL} flex items-center justify-center rounded-full border border-black bg-transparent`;
 const buttonClass = `${controlClass} cursor-pointer focus-visible:outline-2 focus-visible:outline-olive focus-visible:outline-offset-2`;
 
-/**
- * Repeat glyph, inline rather than an <img> so it can take the button's colour
- * and show the on/off state without shipping a second file.
- */
+/** Inline rather than an <img> so it can take the button's colour for on/off state. */
 function RepeatIcon() {
   return (
     <svg

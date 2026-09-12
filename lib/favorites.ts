@@ -1,15 +1,5 @@
 import type { Surah } from "@/lib/surahs";
 
-/**
- * Starred surahs, and the single list they share with everything else.
- *
- * Favourites are not a separate section and do not get their own numbering:
- * a starred surah moves to the front of the one list and keeps the mushaf
- * number it has always had, so "২. সূরা আল বাকারা" reads the same whether it
- * sits first or second.
- */
-
-/** Adds a surah to the starred set, or removes it if it is already there. */
 export function toggleFavorite(
   favorites: readonly number[],
   surahNumber: number,
@@ -21,9 +11,8 @@ export function toggleFavorite(
 
 /**
  * Starred surahs first, the rest after, each half still in mushaf order.
- *
- * Ordering by mushaf number rather than by when a surah was starred keeps the
- * list predictable: starring one surah never reshuffles the others.
+ * Ordering by mushaf number rather than by when a surah was starred means
+ * starring one never reshuffles the others.
  */
 export function orderByFavorites(
   surahs: readonly Surah[],
@@ -38,14 +27,9 @@ export function orderByFavorites(
 }
 
 /**
- * The surah `delta` steps away from `current` in the reader's own ordering —
- * starred surahs first — not by mushaf number. Continuous playback and the
- * page context menu's next/previous both step through this order, so a
- * favourite surah is followed by whatever comes after it on screen rather
- * than by its own number plus one.
- *
- * Undefined past either end: continuous playback stops there instead of
- * wrapping, matching what it already did before favourites existed.
+ * The surah `delta` steps from `current` in the reader's own ordering — starred
+ * first — not by mushaf number, so next/previous match what is on screen.
+ * Undefined past either end, so continuous playback stops rather than wrapping.
  */
 export function stepSurah(
   surahs: readonly Surah[],

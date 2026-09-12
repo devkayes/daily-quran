@@ -24,8 +24,7 @@ export function SurahList({
 }: Props) {
   const isEnglish = language === "en";
 
-  // One list, reordered — starred surahs are not a separate section, and they
-  // keep their mushaf numbers rather than being renumbered 1, 2, 3.
+  // One list, reordered. Starred surahs keep their mushaf numbers.
   const ordered = useMemo(() => orderByFavorites(SURAHS, favorites), [favorites]);
 
   function toggleFavorite(surahNumber: number): void {
