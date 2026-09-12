@@ -1,0 +1,23 @@
+#!/bin/sh
+# Blocks a commit whose staged files are not formatted and lint-clean.
+# Enabled by `pnpm install` (see the "postinstall" script), which points
+# core.hooksPath at this directory. Bypass with `git commit --no-verify`.
+
+if ! command -v pnpm >/dev/null 2>&1; then
+  echo "pre-commit: pnpm not found, skipping Biome check." >&2
+  exit 0
+fi
+
+if pnpm exec biome check --staged --no-errors-on-unmatched; then
+  exit 0
+fi
+
+cat >&2 <<'MSG'
+
+Commit blocked: staged files are not formatted or have lint errors.
+
+  pnpm lint:fix    fix formatting and safe lint issues
+  git add -u       re-stage the fixed files
+
+MSG
+exit 1

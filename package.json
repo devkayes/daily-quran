@@ -22,13 +22,16 @@
     "build:firefox": "wxt build -b firefox",
     "zip:firefox": "wxt zip -b firefox",
     "compile": "tsc --noEmit",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "check": "pnpm compile && pnpm lint && pnpm test",
-    "postinstall": "wxt prepare"
+    "hooks:install": "git config core.hooksPath .githooks",
+    "postinstall": "wxt prepare && (pnpm hooks:install || true)"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.12",

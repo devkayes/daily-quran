@@ -37,7 +37,7 @@ unrestricted. None of it reaches the user.
 | Storage | `wxt/storage` |
 | Validation | Zod |
 | Data fetching | TanStack Query |
-| Lint and format | Biome |
+| Lint and format | [Biome](https://biomejs.dev) — the only formatter; see [Code style](#code-style) |
 | Unit tests | Vitest |
 | End-to-end | Playwright |
 
@@ -51,10 +51,48 @@ pnpm dev                            # Chrome, with hot reload
 pnpm dev:firefox
 ```
 
+## Code style
+
+**Biome is the single source of truth for formatting, and it is not
+negotiable.** Do not add Prettier, ESLint or an editor-specific formatter — two
+formatters fighting over the same file produces diffs nobody asked for.
+
+The rules live in [`biome.json`](./biome.json): two-space indent, 88-column
+lines, double quotes, semicolons, LF endings. [`.editorconfig`](./.editorconfig)
+carries the same values for editors that do not run Biome, and Biome reads that
+file (`formatter.useEditorconfig`) so the two cannot drift apart.
+
+```bash
+pnpm format         # rewrite files to match
+pnpm format:check   # report violations, change nothing
+pnpm lint:fix       # formatting + safe lint fixes in one pass
+```
+
+Three things keep this honest, so unformatted code is hard to commit by accident:
+
+1. **Your editor.** VS Code users get it automatically — the workspace sets
+   Biome as the default formatter with format-on-save, and recommends the
+   [Biome extension](https://marketplace.visualstudio.com/items?itemName=biomejs.biome)
+   on first open. Accept the recommendation.
+2. **A pre-commit hook.** `pnpm install` points `core.hooksPath` at
+   [`.githooks/`](./.githooks), whose `pre-commit` runs `biome check --staged`
+   and rejects the commit if staged files are unformatted or fail lint. It is a
+   plain shell script — no Husky, no extra dependency. `--no-verify` bypasses it,
+   but the next step will still catch you.
+
+   pnpm only runs `postinstall` when it actually installs something, so on a
+   checkout that already has `node_modules` you need to enable it once:
+
+   ```bash
+   pnpm hooks:install
+   ```
+3. **`pnpm check`.** Runs `biome check .` across the repo, which fails on
+   formatting as well as lint. Run it before every pull request.
+
 ## Before you open a pull request
 
 ```bash
-pnpm check      # typecheck + lint + unit tests
+pnpm check      # typecheck + lint + format + unit tests
 pnpm build      # must produce a loadable extension
 ```
 
