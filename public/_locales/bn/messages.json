@@ -1,0 +1,101 @@
+{
+  "extName": {
+    "message": "Daily Quran"
+  },
+  "extDescription": {
+    "message": "যেকোনো সময় ব্রাউজার থেকেই কুরআনের আয়াত পড়ুন ও অনুধাবন করুন।"
+  },
+  "ayatLabel": {
+    "message": "আয়াত"
+  },
+  "translationLanguage": {
+    "message": "অনুবাদের ভাষা"
+  },
+  "translationUnavailable": {
+    "message": "ইংরেজি অনুবাদ আনা যায়নি।"
+  },
+  "readMore": {
+    "message": "আরও পড়ুন..."
+  },
+  "reloadAyah": {
+    "message": "নতুন আয়াত লোড করুন"
+  },
+  "play": {
+    "message": "চালান"
+  },
+  "pause": {
+    "message": "বিরতি"
+  },
+  "restart": {
+    "message": "শুরু থেকে"
+  },
+  "volume": {
+    "message": "শব্দের মাত্রা"
+  },
+  "progress": {
+    "message": "অডিও অগ্রগতি"
+  },
+  "ayahLoadError": {
+    "message": "আয়াত আনা যায়নি। আবার চেষ্টা করুন।"
+  },
+  "audioLoadError": {
+    "message": "এই তিলাওয়াতটি লোড করা যায়নি।"
+  },
+  "retry": {
+    "message": "আবার চেষ্টা করুন"
+  },
+  "loadingAyah": {
+    "message": "আয়াত আসছে..."
+  },
+  "loadingAudio": {
+    "message": "তিলাওয়াত লোড হচ্ছে..."
+  },
+  "surahListLabel": {
+    "message": "সূরার তালিকা"
+  },
+  "addFavorite": {
+    "message": "$SURAH$ প্রিয় তালিকায় যোগ করুন",
+    "placeholders": {
+      "surah": {
+        "content": "$1",
+        "example": "সূরা আল ফাতিহা"
+      }
+    }
+  },
+  "removeFavorite": {
+    "message": "$SURAH$ প্রিয় তালিকা থেকে সরান",
+    "placeholders": {
+      "surah": {
+        "content": "$1",
+        "example": "সূরা আল ফাতিহা"
+      }
+    }
+  },
+  "continuous": {
+    "message": "একটানা"
+  },
+  "nextSurah": {
+    "message": "পরের সূরা"
+  },
+  "previousSurah": {
+    "message": "আগের সূরা"
+  },
+  "continuousHint": {
+    "message": "একটি সূরা শেষ হলে পরেরটি আপনা-আপনি চলবে"
+  },
+  "creditsAyah": {
+    "message": "আয়াত ও অনুবাদ"
+  },
+  "creditsTranslation": {
+    "message": "অনুবাদ"
+  },
+  "creditsAudio": {
+    "message": "তিলাওয়াত"
+  },
+  "creditsIntro": {
+    "message": "উৎস"
+  },
+  "footerLink": {
+    "message": "Daily Quran"
+  }
+}

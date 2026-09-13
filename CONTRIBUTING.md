@@ -1,32 +1,170 @@
-## Developers Guide
+# Developers Guide
 
-Developers are welcome to contribute to this project and help make it more dynamic.
+Assalamu Alaykum, and thank you for considering a contribution to **Daily Quran**.
 
-The **Daily Quran** extension is developed using **Manifest V3**. As Manifest V2 is being deprecated, managing background audio in the new version (MV3) has become more complex due to stricter guidelines. To avoid potential issues with future updates, I’ve decided not to use any external APIs or packages that could cause problems when upgrading to newer versions. It is also highly recommended to use vanilla JavaScript to keep the extension lightweight and more compatible with future changes.
+## What changed in 2.0, and why
 
-## Pre-Commit Rules
+Earlier versions of this guide banned build tooling, TypeScript, and every
+third-party package. The reasoning behind that rule was sound at the time:
+Manifest V3 was still moving, background audio was the hard part, and a heavy
+dependency could have stranded the project.
 
-1. **Use Vanilla JavaScript**  
-   - It is highly recommended to write code using plain JavaScript to maintain simplicity and compatibility.
+That rule has been retired, because it was solving the wrong problem. It ruled
+out type checking, tests, and linting — tools that ship *nothing* to users and
+catch exactly the class of bug that reached production in v1.x, including an
+ayah's number being passed where its surah number belonged, and an event
+listener being registered several times a second during playback.
 
-2. **No External API Calls**  
-   - External API usage is strictly prohibited to ensure the extension remains self-contained and avoids potential issues with API dependencies.
+The intent behind the old rule is kept, and it is still binding:
 
-3. **Avoid Libraries/Frameworks**  
-   - The use of any third-party libraries, packages, or frameworks is not allowed to keep the extension lightweight and minimize update-related conflicts.
+- **Few runtime dependencies, each deliberate.** Anything shipped in the bundle
+  must earn its place, and must be replaceable in an afternoon.
+- **No analytics, no tracking, no telemetry.** The extension collects nothing.
+- **Stay light.** The whole package is well under 1 MB. Keep it that way.
 
-4. **No PRs for Framework Conversions**  
-   - Please do not submit pull requests for converting the project to use frameworks like Extension.js or any others.
+Build-time tooling — TypeScript, Vite, Biome, Vitest, Playwright — is
+unrestricted. None of it reaches the user.
 
-5. **Code Consistency**  
-   - Ensure that code is clean, consistent, and adheres to the project's coding standards.
+## The stack
 
-6. **Performance Optimization**  
-   - Focus on writing efficient, optimized code to ensure smooth performance in the browser.
+| Concern | Tool |
+| --- | --- |
+| Extension framework | [WXT](https://wxt.dev) |
+| Language | TypeScript, `strict` |
+| UI | React 19 |
+| Styling | Tailwind CSS v4 |
+| Messaging | `@webext-core/messaging` |
+| Storage | `wxt/storage` |
+| Validation | Zod |
+| Data fetching | TanStack Query |
+| Lint and format | [Biome](https://biomejs.dev) — the only formatter; see [Code style](#code-style) |
+| Unit tests | Vitest |
+| End-to-end | Playwright |
 
+## Getting started
 
-Thank you for considering contributing to this project! By submitting your contributions, you agree that:
-- Your contributions will be governed by the project’s Custom License.
-- You will not reuse the project code outside of this project for any purpose.
+```bash
+corepack enable
+pnpm install
+cp .env.example .env.development   # then fill in the endpoints
+pnpm dev                            # Chrome, with hot reload
+pnpm dev:firefox
+```
 
-Please follow the project's coding standards and guidelines while contributing.
+## Code style
+
+**Biome is the single source of truth for formatting, and it is not
+negotiable.** Do not add Prettier, ESLint or an editor-specific formatter — two
+formatters fighting over the same file produces diffs nobody asked for.
+
+The rules live in [`biome.json`](./biome.json): two-space indent, 88-column
+lines, double quotes, semicolons, LF endings. [`.editorconfig`](./.editorconfig)
+carries the same values for editors that do not run Biome, and Biome reads that
+file (`formatter.useEditorconfig`) so the two cannot drift apart.
+
+```bash
+pnpm format         # rewrite files to match
+pnpm format:check   # report violations, change nothing
+pnpm lint:fix       # formatting + safe lint fixes in one pass
+```
+
+Three things keep this honest, so unformatted code is hard to commit by accident:
+
+1. **Your editor.** VS Code users get it automatically — the workspace sets
+   Biome as the default formatter with format-on-save, and recommends the
+   [Biome extension](https://marketplace.visualstudio.com/items?itemName=biomejs.biome)
+   on first open. Accept the recommendation.
+2. **A pre-commit hook.** `pnpm install` points `core.hooksPath` at
+   [`.githooks/`](./.githooks), whose `pre-commit` runs `biome check --staged`
+   and rejects the commit if staged files are unformatted or fail lint. It is a
+   plain shell script — no Husky, no extra dependency. `--no-verify` bypasses it,
+   but the next step will still catch you.
+
+   pnpm only runs `postinstall` when it actually installs something, so on a
+   checkout that already has `node_modules` you need to enable it once:
+
+   ```bash
+   pnpm hooks:install
+   ```
+3. **`pnpm check`.** Runs `biome check .` across the repo, which fails on
+   formatting as well as lint. Run it before every pull request.
+
+## Before you open a pull request
+
+```bash
+pnpm check      # typecheck + lint + format + unit tests
+pnpm build      # must produce a loadable extension
+```
+
+For anything touching playback or the popup, also run the end-to-end suite:
+
+```bash
+pnpm exec playwright install chromium   # first time only
+pnpm build && pnpm test:e2e
+```
+
+## House rules
+
+1. **Types are not optional.** `strict` is on, along with
+   `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes`. Do not reach for
+   `any`; Biome will reject it.
+2. **Validate anything that crosses a boundary.** Network responses are parsed
+   with Zod before use. Never assign remote content with `innerHTML`.
+3. **All state goes through `lib/storage.ts`.** No `localStorage`. An MV3
+   service worker cannot see it, which is the whole reason v1's playback state
+   was unreachable from the background.
+4. **Messages go through `lib/messaging.ts`.** No ad-hoc
+   `chrome.runtime.sendMessage` with an untyped object.
+5. **User-facing strings go in `public/_locales`.** A key added to
+   `MESSAGE_KEYS` without a translation in every locale fails the test suite.
+6. **Cover the logic you add.** Pure logic belongs in `lib/` with a Vitest test.
+   Behaviour a user can observe belongs in `e2e/`.
+7. **Conventional commits.** `feat:`, `fix:`, `refactor:`, `perf:`, `docs:`,
+   `chore:`. Use the prefix to judge the version bump when cutting a release.
+8. **Cross-browser code branches behind an interface.** See
+   `lib/audio-controller.ts`: Chrome uses an offscreen document, Firefox uses its
+   background event page, and everything above that line is shared.
+
+## Layout
+
+```
+entrypoints/
+  background.ts        service worker (Chrome) / event page (Firefox)
+  offscreen/           audio host for Chrome, where the worker has no DOM
+  popup/               React UI
+lib/                   shared, testable logic
+public/                static assets, icons, _locales
+tests/                 Vitest unit tests
+e2e/                   Playwright, drives the real built extension
+```
+
+## Releasing
+
+Releases are built and published by hand — there is no CI/CD pipeline.
+Primary targets are the **Chrome Web Store** and **Microsoft Edge Add-ons**;
+`pnpm build` / `pnpm zip` (no `-b` flag) produce a Chromium MV3 package that
+both stores accept as-is — WXT has no separate "edge" build target. Firefox
+is currently a low-priority, optional target (`pnpm zip:firefox`).
+
+1. Bump `version` in `package.json` and add an entry to `CHANGELOG.md`
+   summarizing the changes, following the existing style.
+2. Build and zip the primary package: `pnpm zip`.
+3. Upload the resulting zip by hand to the
+   [Chrome Web Store](https://chrome.google.com/webstore/devconsole) and the
+   [Edge Add-ons](https://partner.microsoft.com/dashboard/microsoftedge) developer
+   consoles — the same zip works for both.
+4. Each store also wants a short description, a privacy-practices declaration
+   (this extension collects nothing, so "no data collected" applies), and at
+   least one 1280×800 screenshot — none of that is generated by the build, so
+   prepare it before submitting.
+5. Tag the release in git (`git tag vX.Y.Z && git push --tags`) once it's live
+   on the stores.
+6. Firefox (optional): `pnpm zip:firefox`, then upload to
+   [Firefox Add-ons](https://addons.mozilla.org/developers/) whenever that
+   target is prioritized.
+
+## License
+
+Daily Quran is licensed under the [GNU GPL v3](./LICENSE.txt) (or, at your
+option, any later version). By submitting a contribution you agree it is
+licensed under the same terms.

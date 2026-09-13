@@ -1,0 +1,176 @@
+import { browser } from "#imports";
+import { createAudioController } from "@/lib/audio-controller";
+import { audioUrlFor } from "@/lib/audio-url";
+import {
+  createContextMenu,
+  registerMenuHandlers,
+  syncContinuousChecked,
+  syncPlayPauseLabel,
+} from "@/lib/context-menu";
+import { stepSurah } from "@/lib/favorites";
+import { broadcastQuietly, onMessage, type PlaybackState } from "@/lib/messaging";
+import {
+  audioDurationItem,
+  continuousPlaybackItem,
+  favoriteSurahsItem,
+  nowPlayingItem,
+  playbackPositionItem,
+  volumeItem,
+} from "@/lib/storage";
+import { FIRST_SURAH, findSurah, SURAHS, type Surah } from "@/lib/surahs";
+
+const POSITION_PERSIST_INTERVAL_MS = 1000;
+
+export default defineBackground({
+  type: "module",
+  main() {
+    let lastPersistedAt = 0;
+
+    /**
+     * The single place playback state is persisted. The audio host cannot do it
+     * on Chrome — offscreen documents have no `chrome.storage` — so every state
+     * change funnels through here.
+     */
+    async function persist(state: PlaybackState): Promise<void> {
+      if (state.duration > 0) await audioDurationItem.setValue(state.duration);
+
+      const now = Date.now();
+      const isCheckpoint = state.status !== "playing";
+      if (isCheckpoint || now - lastPersistedAt >= POSITION_PERSIST_INTERVAL_MS) {
+        lastPersistedAt = now;
+        await playbackPositionItem.setValue(state.position);
+      }
+    }
+
+    async function start(surah: Surah): Promise<void> {
+      const url = audioUrlFor(surah);
+      await nowPlayingItem.setValue({
+        surahNumber: surah.number,
+        name: surah.name,
+        url,
+      });
+      await playbackPositionItem.setValue(0);
+      await audio.play({
+        url,
+        surahNumber: surah.number,
+        name: surah.name,
+        volume: await volumeItem.getValue(),
+        startAt: 0,
+      });
+    }
+
+    /**
+     * Continuous playback. Runs on "ended" only, so it cannot loop. Follows the
+     * reader's own order — starred surahs first, same as the popup's list — and
+     * stops at the end of it rather than wrapping.
+     */
+    async function advance(state: PlaybackState): Promise<void> {
+      if (state.surahNumber === null) return;
+      if (!(await continuousPlaybackItem.getValue())) return;
+
+      const favorites = new Set(await favoriteSurahsItem.getValue());
+      const next = stepSurah(SURAHS, favorites, state.surahNumber, 1);
+      if (!next) return;
+
+      await start(next);
+    }
+
+    function handleState(state: PlaybackState): void {
+      void persist(state).catch(() => {
+        // A failed write must never take down playback.
+      });
+      broadcastQuietly(state);
+
+      syncPlayPauseLabel(state);
+
+      if (state.status === "ended") {
+        void advance(state).catch(() => {
+          // Leaves playback stopped, where it would have been without the setting.
+        });
+      }
+    }
+
+    const audio = createAudioController(handleState);
+
+    // Chrome: the offscreen document reports here. Firefox: never fires, because
+    // the host calls `handleState` directly.
+    onMessage("hostStateChanged", ({ data }) => handleState(data));
+
+    onMessage("play", async ({ data }) => {
+      await nowPlayingItem.setValue({
+        surahNumber: data.surahNumber,
+        name: data.name,
+        url: data.url,
+      });
+      await volumeItem.setValue(data.volume);
+      await playbackPositionItem.setValue(data.startAt);
+      await audio.play(data);
+    });
+
+    onMessage("pause", () => audio.pause());
+    onMessage("restart", () => audio.restart());
+
+    onMessage("setVolume", async ({ data }) => {
+      await volumeItem.setValue(data);
+      await audio.setVolume(data);
+    });
+
+    onMessage("seek", async ({ data }) => {
+      await playbackPositionItem.setValue(data);
+      await audio.seek(data);
+    });
+
+    onMessage("getPlaybackState", () => audio.getState());
+
+    async function resumeOrStart(): Promise<void> {
+      const last = await nowPlayingItem.getValue();
+      const surah = last ? findSurah(last.surahNumber) : undefined;
+      await start(surah ?? FIRST_SURAH);
+    }
+
+    registerMenuHandlers({
+      async togglePlayPause() {
+        const state = await audio.getState();
+        if (state.status === "playing") {
+          await audio.pause();
+          return;
+        }
+        // Resuming a loaded surah keeps its position; otherwise start fresh.
+        if (state.surahNumber !== null) {
+          const surah = findSurah(state.surahNumber);
+          if (surah) {
+            await audio.play({
+              url: audioUrlFor(surah),
+              surahNumber: surah.number,
+              name: surah.name,
+              volume: await volumeItem.getValue(),
+              startAt: await playbackPositionItem.getValue(),
+            });
+            return;
+          }
+        }
+        await resumeOrStart();
+      },
+
+      restart: () => audio.restart(),
+
+      async step(delta) {
+        const last = await nowPlayingItem.getValue();
+        const current = last?.surahNumber ?? FIRST_SURAH.number;
+        const favorites = new Set(await favoriteSurahsItem.getValue());
+        const next = stepSurah(SURAHS, favorites, current, delta);
+        if (!next) return;
+        await start(next);
+      },
+
+      async setContinuous(enabled) {
+        await continuousPlaybackItem.setValue(enabled);
+      },
+    });
+
+    browser.runtime.onInstalled.addListener(() => {
+      void continuousPlaybackItem.getValue().then(createContextMenu);
+    });
+    continuousPlaybackItem.watch((enabled) => syncContinuousChecked(enabled));
+  },
+});

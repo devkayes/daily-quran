@@ -1,0 +1,110 @@
+import { browser } from "#imports";
+import { AudioHost } from "@/lib/audio-host";
+import {
+  IDLE_PLAYBACK_STATE,
+  type PlaybackState,
+  type PlayCommand,
+  sendMessage,
+} from "@/lib/messaging";
+
+/**
+ * What the background talks to in order to control audio. Chrome and Firefox
+ * host the DOM audio element in different places; everything above this line
+ * is identical.
+ */
+export interface AudioController {
+  play(command: PlayCommand): Promise<void>;
+  pause(): Promise<void>;
+  restart(): Promise<void>;
+  setVolume(volume: number): Promise<void>;
+  seek(seconds: number): Promise<void>;
+  getState(): Promise<PlaybackState>;
+}
+
+const OFFSCREEN_URL = "offscreen.html";
+
+/** Chrome/Edge: the MV3 worker has no DOM, so audio lives in an offscreen document. */
+function createOffscreenController(): AudioController {
+  let creating: Promise<void> | null = null;
+
+  async function ensureDocument(): Promise<void> {
+    if (await browser.offscreen.hasDocument()) return;
+    // Concurrent commands must not race into two createDocument calls.
+    creating ??= browser.offscreen
+      .createDocument({
+        url: OFFSCREEN_URL,
+        reasons: ["AUDIO_PLAYBACK"],
+        justification:
+          "Necessary for playing Quranic audio in the background when the extension is active.",
+      })
+      .finally(() => {
+        creating = null;
+      });
+    await creating;
+  }
+
+  return {
+    async play(command) {
+      await ensureDocument();
+      await sendMessage("hostPlay", command);
+    },
+    async pause() {
+      await ensureDocument();
+      await sendMessage("hostPause", undefined);
+    },
+    async restart() {
+      await ensureDocument();
+      await sendMessage("hostRestart", undefined);
+    },
+    async setVolume(volume) {
+      await ensureDocument();
+      await sendMessage("hostSetVolume", volume);
+    },
+    async seek(seconds) {
+      await ensureDocument();
+      await sendMessage("hostSeek", seconds);
+    },
+    async getState() {
+      // Do not spin up an offscreen document just to answer "are you playing?".
+      if (!(await browser.offscreen.hasDocument())) return IDLE_PLAYBACK_STATE;
+      return sendMessage("hostGetState", undefined);
+    },
+  };
+}
+
+/** Firefox: the MV3 event page has a DOM, so the audio element lives here directly. */
+function createInPageController(
+  onState: (state: PlaybackState) => void,
+): AudioController {
+  let host: AudioHost | null = null;
+
+  function ensureHost(): AudioHost {
+    if (host) return host;
+    const audio = document.createElement("audio");
+    audio.preload = "metadata";
+    document.body.append(audio);
+    host = new AudioHost(audio, onState);
+    return host;
+  }
+
+  return {
+    play: async (command) => ensureHost().play(command),
+    pause: async () => ensureHost().pause(),
+    restart: async () => ensureHost().restart(),
+    setVolume: async (volume) => ensureHost().setVolume(volume),
+    seek: async (seconds) => ensureHost().seek(seconds),
+    getState: async () => host?.state ?? IDLE_PLAYBACK_STATE,
+  };
+}
+
+/**
+ * `onState` is wired up on Firefox only, where the host shares this context. On
+ * Chrome the offscreen document reports over `hostStateChanged` instead.
+ */
+export function createAudioController(
+  onState: (state: PlaybackState) => void,
+): AudioController {
+  return import.meta.env.FIREFOX
+    ? createInPageController(onState)
+    : createOffscreenController();
+}
